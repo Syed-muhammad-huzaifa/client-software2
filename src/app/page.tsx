@@ -1,729 +1,21 @@
-// "use client";
-// import React, { useMemo, useState, useEffect, useRef } from "react";
-// import {
-//   Search,
-//   ShoppingCart,
-//   Percent,
-//   Package,
-//   Filter,
-//   X,
-//   Phone,
-//   Mail,
-//   MessageCircle,
-//   Globe,
-//   MapPin,
-//   FileDown,
-// } from "lucide-react";
-
-// /***** =========================================
-//  * COMPANY CONFIG (edit these)
-//  * ========================================= */
-// const COMPANY = {
-//   name: "QURESHI SOFT SYSTEM",
-//   tagline: "Fast, reliable pharmaceutical distribution",
-//   whatsappNumber: "0321-8004275",
-//   phone: "0321-8004275",
-//   email: "amjadqureshi@yahoo.com",
-//   addressShort: "Quetta, Pakistan",
-//   addressFull: "Resani center zarghoon road quetta, pakistan",
-//   website: "www.winexports.com",
-// };
-
-// /***** =========================================
-//  * TYPES & HELPERS
-//  * ========================================= */
-// type Item = {
-//   code: string;
-//   name: string;
-//   offerPct: number;
-//   bonus?: string;
-//   tp: number;
-//   section: string;
-// };
-
-// function currency(n: number) {
-//   return new Intl.NumberFormat(undefined, {
-//     minimumFractionDigits: 2,
-//     maximumFractionDigits: 2,
-//   }).format(n);
-// }
-// function sanitizePhoneForWa(num: string) {
-//   return Array.from(num)
-//     .filter((c) => c >= "0" && c <= "9")
-//     .join("");
-// }
-// function safeFileNameFromCompany(name: string) {
-//   return name.trim().split(" ").filter(Boolean).join("_");
-// }
-// function buildOrderText(
-//   lines: { item: Item; qty: number; subtotal: number }[],
-//   total: number
-// ) {
-//   const head = `*${COMPANY.name}*\n${COMPANY.tagline}\n\n*Order Summary*`;
-//   const rows = lines
-//     .map(
-//       ({ item, qty, subtotal }) =>
-//         `• ${item.code} – ${item.name} x${qty} @ ${currency(item.tp)} (-${item.offerPct}%) = ${currency(subtotal)}`
-//     )
-//     .join("\n");
-//   const foot = `\nTotal: *${currency(total)}*\nThanks!`;
-//   return `${head}\n${rows}${foot}`;
-// }
-
-// /***** =========================================
-//  * DEMO DATA (replace with API/DB)
-//  * ========================================= */
-// const SEED: Item[] = [
-//   { code: "170", name: "ACENAC SR CAP", offerPct: 2, bonus: ".", tp: 399.5, section: "A" },
-//   { code: "121", name: "AGNAR TAB", offerPct: 2, bonus: ".", tp: 765.0, section: "A" },
-//   { code: "168", name: "ALL D DROPS", offerPct: 8, bonus: ".", tp: 300.9, section: "A" },
-//   { code: "138", name: "ANAFORTAN PLUS INJ", offerPct: 3, bonus: ".", tp: 626.19, section: "A" },
-//   { code: "59", name: "AZOMAX 250MG CAP", offerPct: 3, bonus: ".", tp: 590.34, section: "A" },
-//   { code: "129", name: "CARDIOLITE 25MG TAB", offerPct: 3, bonus: ".", tp: 514.25, section: "C" },
-//   { code: "130", name: "CARDIOLITE 50MG TAB", offerPct: 4, bonus: ".", tp: 839.83, section: "C" },
-//   { code: "275", name: "CATAFEN 50MG TAB", offerPct: 10, bonus: ".", tp: 163.2, section: "C" },
-//   { code: "107", name: "CECLOR 125MG SYP", offerPct: 2, bonus: ".", tp: 340.0, section: "C" },
-//   { code: "104", name: "CECLOR 250MG CAP", offerPct: 2, bonus: ".", tp: 531.25, section: "C" },
-//   { code: "105", name: "CECLOR 500MG CAP", offerPct: 2, bonus: ".", tp: 952.0, section: "C" },
-//   { code: "205", name: "CEFEXOL SYP", offerPct: 16, bonus: ".", tp: 242.49, section: "C" },
-//   { code: "16", name: "CEFIGET DS SYP", offerPct: 2, bonus: ".", tp: 280.5, section: "C" },
-//   { code: "117", name: "CEFXONE 1G INJ", offerPct: 25, bonus: ".", tp: 365.5, section: "C" },
-//   { code: "111", name: "CEFXONE 500IV INJ", offerPct: 28, bonus: ".", tp: 233.75, section: "C" },
-//   { code: "22", name: "FEXET 60MG TAB", offerPct: 2, bonus: ".", tp: 293.25, section: "F" },
-//   { code: "203", name: "FLUCON 150MG CAP", offerPct: 2, bonus: ".", tp: 136.0, section: "F" },
-//   { code: "119", name: "GABIX 300MG CAP", offerPct: 3, bonus: ".", tp: 271.48, section: "G" },
-//   { code: "278", name: "GABLIN 75MG CAP", offerPct: 12, bonus: ".", tp: 412.34, section: "G" },
-//   { code: "98", name: "OMEZOL 20MG CAP", offerPct: 16, bonus: ".", tp: 273.7, section: "O" },
-//   { code: "279", name: "ORTHROFENAC INJ", offerPct: 22, bonus: ".", tp: 197.2, section: "O" },
-//   { code: "110", name: "OSNATE D SYP", offerPct: 2, bonus: ".", tp: 481.41, section: "O" },
-//   { code: "252", name: "OSNATE D TAB", offerPct: 1, bonus: ".", tp: 407.2, section: "O" },
-// ];
-// const sections = Array.from(new Set(SEED.map((i) => i.section))).sort();
-
-// /***** =========================================
-//  * REUSABLE COMPONENTS
-//  * ========================================= */
-
-// // Typing effect for the company name (works with any name)
-// function Typewriter({
-//   text,
-//   speed = 70,
-//   startDelay = 300,
-//   replayKey,
-// }: {
-//   text: string;
-//   speed?: number;
-//   startDelay?: number;
-//   /** change this value to force a replay */
-//   replayKey?: number | string;
-// }) {
-//   const [i, setI] = React.useState(0);
-//   const [showCursor, setShowCursor] = React.useState(true);
-
-//   React.useEffect(() => {
-//     // reset index whenever replayKey or the inputs change
-//     setI(0);
-
-//     let typeTimer: any = null;
-//     let startTimer: any = null;
-//     const blinkTimer = setInterval(() => setShowCursor((s) => !s), 530);
-
-//     startTimer = setTimeout(() => {
-//       typeTimer = setInterval(() => {
-//         setI((prev) => {
-//           if (prev >= text.length) {
-//             clearInterval(typeTimer);
-//             return prev;
-//           }
-//           return prev + 1;
-//         });
-//       }, speed);
-//     }, startDelay);
-
-//     return () => {
-//       clearTimeout(startTimer);
-//       clearInterval(typeTimer);
-//       clearInterval(blinkTimer);
-//     };
-//   }, [text, speed, startDelay, replayKey]);
-
-//   return (
-//     <span aria-label={text} className="align-baseline">
-//       {text.slice(0, i)}
-//       <span className="inline-block w-2 select-none">{showCursor ? "|" : " "}</span>
-//     </span>
-//   );
-// }
-
-// // 1) HEADER — tuned for <500px and up
-// function CompanyHeader({
-//   query,
-//   setQuery,
-//   activeSection,
-//   setActiveSection,
-// }: {
-//   query: string;
-//   setQuery: (v: string) => void;
-//   activeSection: string | null;
-//   setActiveSection: (s: string | null) => void;
-// }) {
-//   // replay the typewriter when the tab regains focus (or component mounts)
-//   const [replayKey, setReplayKey] = React.useState<number>(() => Date.now());
-//   React.useEffect(() => {
-//     const onVis = () => {
-//       if (document.visibilityState === "visible") {
-//         setReplayKey(Date.now());
-//       }
-//     };
-//     document.addEventListener("visibilitychange", onVis);
-//     return () => document.removeEventListener("visibilitychange", onVis);
-//   }, []);
-//   return (
-//     <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-slate-900/95 backdrop-blur">
-//       <div className="mx-auto max-w-7xl px-4 py-4">
-//         {/* Brand + Name (mobile-first) */}
-//         <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
-//           <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 grid place-items-center shadow-xl">
-//             <Package className="h-6 w-6 text-white" aria-hidden />
-//           </div>
-//           <div className="text-center sm:text-left w-full">
-//             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 via-indigo-400 to-purple-400 bg-clip-text text-transparent leading-tight">
-//               <Typewriter text={COMPANY.name} speed={60} startDelay={250} replayKey={replayKey} />
-//             </h1>
-//             <p className="mt-1 text-[12px] sm:text-sm text-slate-300/90">
-//               {COMPANY.tagline}
-//             </p>
-//           </div>
-//         </div>
-
-//         {/* Meta chips + Search — wrap nicely under 500px */}
-//         <div className="mt-3 flex flex-col gap-3 sm:mt-4 sm:flex-row sm:items-center">
-//           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-//             <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-//               <MapPin className="h-4 w-4" /> {COMPANY.addressShort}
-//             </span>
-            
-//           </div>
-
-//           <div className="sm:ml-auto w-full sm:w-[360px] relative">
-//             <label htmlFor="hdr-search" className="sr-only">
-//               Search products
-//             </label>
-//             <input
-//               id="hdr-search"
-//               value={query}
-//               onChange={(e) => setQuery(e.target.value)}
-//               placeholder="Search by code, name, or %"
-//               className="w-full rounded-2xl bg-slate-800/70 border border-white/10 px-4 py-2.5 pl-11 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
-//             />
-//             <Search
-//               className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300"
-//               aria-hidden
-//             />
-//           </div>
-//         </div>
-
-//         {/* Section chips */}
-//         <div className="mt-3 flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-//           <button
-//             onClick={() => setActiveSection(null)}
-//             className={`px-3 py-1 rounded-xl border text-xs whitespace-nowrap ${
-//               activeSection === null
-//                 ? "bg-indigo-600 border-indigo-500"
-//                 : "bg-white/5 border-white/10"
-//             }`}
-//           >
-//             All
-//           </button>
-//           {sections.map((s) => (
-//             <button
-//               key={s}
-//               onClick={() => setActiveSection(s)}
-//               className={`px-3 py-1 rounded-xl border text-xs whitespace-nowrap ${
-//                 activeSection === s
-//                   ? "bg-indigo-600 border-indigo-500"
-//                   : "bg-white/5 border-white/10"
-//               }`}
-//             >
-//               {s}
-//             </button>
-//           ))}
-//         </div>
-//       </div>
-//     </header>
-//   );
-// }
-
-// // 2) PRODUCT TABLE (desktop ≥768px)
-// function ProductTable({
-//   items,
-//   quantities,
-//   setQty,
-// }: {
-//   items: Item[];
-//   quantities: Record<string, number>;
-//   setQty: (code: string, qty: number) => void;
-// }) {
-//   return (
-//     <div className="hidden md:block">
-//       <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
-//         <table className="w-full text-sm">
-//           <thead className="bg-slate-800/70">
-//             <tr className="text-left">
-//               <th className="px-4 py-3">Code</th>
-//               <th className="px-4 py-3">Item Name</th>
-//               <th className="px-4 py-3">Order</th>
-//               <th className="px-4 py-3">
-//                 <div className="flex items-center gap-1">
-//                   <Percent className="h-4 w-4" /> Offer
-//                 </div>
-//               </th>
-//               <th className="px-4 py-3">Bonus</th>
-//               <th className="px-4 py-3">T.P</th>
-//               <th className="px-4 py-3">Subtotal</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {items.map((i) => {
-//               const qty = quantities[i.code] || 0;
-//               const subtotal = qty * i.tp * (1 - i.offerPct / 100);
-//               return (
-//                 <tr
-//                   key={i.code}
-//                   className="border-t border-white/10 hover:bg-slate-800/40"
-//                 >
-//                   <td className="px-4 py-3 font-medium text-slate-200">
-//                     {i.code}
-//                   </td>
-//                   <td className="px-4 py-3">
-//                     <div className="flex items-center gap-2">
-//                       <span className="inline-flex items-center rounded-lg bg-slate-700/60 px-2 py-0.5 text-[10px] font-semibold text-slate-200">
-//                         {i.section}
-//                       </span>
-//                       <span>{i.name}</span>
-//                     </div>
-//                   </td>
-//                   <td className="px-4 py-3 w-44">
-//                     <div className="flex items-center gap-2">
-//                       <button
-//                         aria-label="Decrease"
-//                         className="px-2 py-1 rounded-lg bg-slate-800/70 border border-white/10"
-//                         onClick={() => setQty(i.code, qty - 1)}
-//                       >
-//                         -
-//                       </button>
-//                       <input
-//                         inputMode="numeric"
-//                         pattern="[0-9]*"
-//                         value={qty}
-//                         onChange={(e) =>
-//                           setQty(i.code, Number(e.currentTarget.value || 0))
-//                         }
-//                         className="w-20 text-center rounded-lg bg-slate-900/70 border border-white/10 py-1"
-//                         aria-label={`Quantity for ${i.name}`}
-//                       />
-//                       <button
-//                         aria-label="Increase"
-//                         className="px-2 py-1 rounded-lg bg-slate-800/70 border border-white/10"
-//                         onClick={() => setQty(i.code, qty + 1)}
-//                       >
-//                         +
-//                       </button>
-//                     </div>
-//                   </td>
-//                   <td className="px-4 py-3 font-semibold">{i.offerPct}%</td>
-//                   <td className="px-4 py-3 text-slate-300">{i.bonus || "-"}</td>
-//                   <td className="px-4 py-3 font-medium">{currency(i.tp)}</td>
-//                   <td className="px-4 py-3 font-semibold">
-//                     {qty ? currency(subtotal) : "—"}
-//                   </td>
-//                 </tr>
-//               );
-//             })}
-//           </tbody>
-//         </table>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // 3) PRODUCT CARDS (mobile <768px)
-// function ProductCards({
-//   items,
-//   quantities,
-//   setQty,
-// }: {
-//   items: Item[];
-//   quantities: Record<string, number>;
-//   setQty: (code: string, qty: number) => void;
-// }) {
-//   return (
-//     <div className="md:hidden space-y-3">
-//       {items.map((i) => {
-//         const qty = quantities[i.code] || 0;
-//         const subtotal = qty * i.tp * (1 - i.offerPct / 100);
-//         return (
-//           <div
-//             key={i.code}
-//             className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 shadow-xl"
-//           >
-//             <div className="flex items-start justify-between gap-3">
-//               <div>
-//                 <div className="flex items-center gap-2 mb-1">
-//                   <span className="inline-flex items-center rounded-lg bg-slate-800/70 px-2 py-0.5 text-[10px] font-semibold text-slate-200">
-//                     {i.section}
-//                   </span>
-//                   <span className="text-xs text-slate-400">#{i.code}</span>
-//                 </div>
-//                 <h3 className="text-base font-semibold leading-tight">
-//                   {i.name}
-//                 </h3>
-//                 <div className="mt-2 flex items-center gap-2 text-sm">
-//                   <span className="inline-flex items-center gap-1 rounded-xl bg-indigo-600/20 px-2 py-0.5 border border-indigo-500/40">
-//                     <Percent className="h-4 w-4" />
-//                     {i.offerPct}%
-//                   </span>
-//                   <span className="text-slate-300">TP: {currency(i.tp)}</span>
-//                   <span className="text-slate-400">Bonus: {i.bonus || "-"}</span>
-//                 </div>
-//               </div>
-//             </div>
-//             <div className="mt-4 flex items-center gap-3">
-//               <button
-//                 aria-label="Decrease"
-//                 className="px-3 py-2 rounded-xl bg-slate-800/70 border border-white/10"
-//                 onClick={() => setQty(i.code, qty - 1)}
-//               >
-//                 -
-//               </button>
-//               <input
-//                 inputMode="numeric"
-//                 pattern="[0-9]*"
-//                 value={qty}
-//                 onChange={(e) => setQty(i.code, Number(e.currentTarget.value || 0))}
-//                 className="w-20 text-center rounded-xl bg-slate-950/70 border border-white/10 py-2"
-//                 aria-label={`Quantity for ${i.name}`}
-//               />
-//               <button
-//                 aria-label="Increase"
-//                 className="px-3 py-2 rounded-xl bg-slate-800/70 border border-white/10"
-//                 onClick={() => setQty(i.code, qty + 1)}
-//               >
-//                 +
-//               </button>
-//               <div className="ml-auto text-right">
-//                 <div className="text-xs text-slate-400">Subtotal</div>
-//                 <div className="text-base font-semibold">
-//                   {qty ? currency(subtotal) : "—"}
-//                 </div>
-//               </div>
-//             </div>
-//           </div>
-//         );
-//       })}
-//     </div>
-//   );
-// }
-
-// // 4) CART SUMMARY
-// function CartSummary({
-//   count,
-//   total,
-//   onWA,
-//   onPDF,
-// }: {
-//   count: number;
-//   total: number;
-//   onWA: () => void;
-//   onPDF: () => void;
-// }) {
-//   return (
-//     <section className="mx-auto max-w-7xl px-4 pb-2">
-//       <div className="rounded-2xl border border-white/10 bg-slate-900/70 shadow-xl px-4 py-4 sm:py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-//         {/* Left: icon + cart meta */}
-//         <div className="flex items-start sm:items-center gap-3">
-//           <div className="shrink-0 grid place-items-center h-9 w-9 rounded-lg bg-white/5 border border-white/10">
-//             <ShoppingCart className="h-5 w-5" aria-hidden />
-//           </div>
-//           <div className="text-sm">
-//             <div className="font-semibold leading-tight">
-//               {count} item{count === 1 ? "" : "s"} in cart
-//             </div>
-//             <div className="text-slate-300">Estimated total after discount</div>
-//           </div>
-//         </div>
-
-//         {/* Total (stacks under 500px) */}
-//         <div className="sm:ml-auto text-left sm:text-right">
-//           <div className="text-xs text-slate-400">Total</div>
-//           <div className="text-xl sm:text-lg font-bold">{currency(total)}</div>
-//         </div>
-
-//         {/* Actions: wrap on small, inline on larger */}
-//         <div className="w-full sm:w-auto sm:ml-2 flex flex-col xs:flex-row sm:flex-row gap-2 sm:gap-2">
-//           <button
-//             onClick={onWA}
-//             className="w-full sm:w-auto justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition px-3 py-2 text-sm font-semibold inline-flex items-center gap-2"
-//           >
-//             <MessageCircle className="h-4 w-4" /> Send WhatsApp
-//           </button>
-//           <button
-//             onClick={onPDF}
-//             className="w-full sm:w-auto justify-center rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 transition px-3 py-2 text-sm font-semibold inline-flex items-center gap-2"
-//           >
-//             <FileDown className="h-4 w-4" /> Generate PDF
-//           </button>
-//         </div>
-//       </div>
-//     </section>
-//   );
-// }
-
-// // 5) FOOTER
-// function CompanyFooter() {
-//   return (
-//     <footer className="mt-10 border-t border-white/10">
-//       <div className="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-//         <div className="space-y-1">
-//           <div className="font-semibold text-slate-200 break-words">{COMPANY.name}</div>
-//           <div className="text-slate-400 break-words">{COMPANY.tagline}</div>
-//         </div>
-//         <div className="space-y-2">
-//           <div className="flex items-start gap-2 break-words">
-//             <MessageCircle className="h-4 w-4 mt-0.5" /> <span>WhatsApp: {COMPANY.whatsappNumber}</span>
-//           </div>
-//           <div className="flex items-start gap-2 break-words">
-//             <Phone className="h-4 w-4 mt-0.5" /> <span>{COMPANY.phone}</span>
-//           </div>
-//           <div className="flex items-start gap-2 break-words">
-//             <Mail className="h-4 w-4 mt-0.5" /> <span className="break-words">{COMPANY.email}</span>
-//           </div>
-//         </div>
-//         <div className="space-y-2">
-//           <div className="flex items-start gap-2 break-words">
-//             <MapPin className="h-4 w-4 mt-0.5" /> <span className="break-words">{COMPANY.addressFull}</span>
-//           </div>
-//           <a
-//             href={`https://${COMPANY.website.replace(/^https?:\/\//, "")}`}
-//             target="_blank"
-//             rel="noreferrer"
-//             className="inline-flex items-center gap-2 hover:underline break-words"
-//           >
-//             <Globe className="h-4 w-4" /> <span className="break-words">{COMPANY.website}</span>
-//           </a>
-//         </div>
-//       </div>
-//     </footer>
-//   );
-// }
-
-// // 6) FILTERS DRAWER (stub)
-// function FiltersDrawer({
-//   activeSection,
-//   onClear,
-// }: {
-//   activeSection: string | null;
-//   onClear: () => void;
-// }) {
-//   return (
-//     <div className="fixed right-4 bottom-24 md:bottom-8">
-//       <div className="rounded-full shadow-2xl overflow-hidden border border-white/10">
-//         <button className="bg-slate-900/90 backdrop-blur px-3 py-2 flex items-center gap-2 text-sm">
-//           <Filter className="h-4 w-4" /> Filters{" "}
-//           {activeSection ? (
-//             <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-indigo-600/20 px-2 py-0.5 border border-indigo-500/40 text-xs">
-//               {activeSection} <X className="h-3 w-3" onClick={onClear} />
-//             </span>
-//           ) : null}
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// /***** =========================================
-//  * DEV CHECKS (lightweight tests run in dev only)
-//  * ========================================= */
-// function runDevChecks() {
-//   try {
-//     const sample = SEED[0];
-//     const qty = 2;
-//     const subtotal = qty * sample.tp * (1 - sample.offerPct / 100);
-//     const txt = buildOrderText([{ item: sample, qty, subtotal }], subtotal);
-//     console.assert(txt.includes("*Order Summary*"), "buildOrderText should contain section heading");
-//     console.assert(txt.includes(sample.code) && txt.includes(sample.name), "buildOrderText should include code & name");
-//     console.assert(txt.includes("x2"), "buildOrderText should include quantity");
-//   } catch (e) {
-//     console.warn("Dev checks failed:", e);
-//   }
-// }
-
-// /***** =========================================
-//  * MAIN PAGE (composed from components)
-//  * ========================================= */
-// export default function OfferList() {
-//   const [query, setQuery] = useState("");
-//   const [activeSection, setActiveSection] = useState<string | null>(null);
-//   const [quantities, setQuantities] = useState<Record<string, number>>({});
-//   const printableRef = useRef<HTMLDivElement | null>(null);
-
-//   useEffect(() => {
-//     if (process.env.NODE_ENV !== "production") runDevChecks();
-//   }, []);
-
-//   const filtered = useMemo(() => {
-//     const q = query.trim().toLowerCase();
-//     return SEED.filter((i) => {
-//       const matchesQuery =
-//         !q ||
-//         i.name.toLowerCase().includes(q) ||
-//         i.code.includes(q) ||
-//         `${i.offerPct}%`.includes(q);
-//       const matchesSection = !activeSection || i.section === activeSection;
-//       return matchesQuery && matchesSection;
-//     });
-//   }, [query, activeSection]);
-
-//   const cart = useMemo(() => {
-//     const lines = Object.entries(quantities)
-//       .filter(([, qty]) => qty > 0)
-//       .map(([code, qty]) => {
-//         const item = SEED.find((i) => i.code === code)!;
-//         const subtotal = qty * item.tp * (1 - item.offerPct / 100);
-//         return { item, qty, subtotal };
-//       });
-//     const total = lines.reduce((sum, l) => sum + l.subtotal, 0);
-//     const count = lines.reduce((sum, l) => sum + l.qty, 0);
-//     return { lines, total, count };
-//   }, [quantities]);
-
-//   function setQty(code: string, qty: number) {
-//     setQuantities((q) => ({
-//       ...q,
-//       [code]: Math.max(0, Math.min(9999, Math.floor(qty))),
-//     }));
-//   }
-
-//   useEffect(() => {
-//     const key = "offerlist-cart";
-//     const prev = window.localStorage.getItem(key);
-//     if (prev) setQuantities(JSON.parse(prev));
-//     const onUnload = () =>
-//       window.localStorage.setItem(key, JSON.stringify(quantities));
-//     window.addEventListener("beforeunload", onUnload);
-//     return () => window.removeEventListener("beforeunload", onUnload);
-//   }, []);
-
-//   useEffect(() => {
-//     window.localStorage.setItem("offerlist-cart", JSON.stringify(quantities));
-//   }, [quantities]);
-
-//   async function generatePDF() {
-//     try {
-//       const [{ jsPDF }, html2canvas] = await Promise.all([
-//         import("jspdf"),
-//         import("html2canvas").then((m) => (m as any).default || (m as any)),
-//       ] as any);
-//       const node = printableRef.current;
-//       if (!node) return;
-//       const canvas = await (html2canvas as any)(node, {
-//         scale: 2,
-//         backgroundColor: "#0b1220",
-//       });
-//       const imgData = canvas.toDataURL("image/png");
-//       const pdf = new (jsPDF as any)({
-//         orientation: "p",
-//         unit: "pt",
-//         format: "a4",
-//       });
-//       const pageWidth = pdf.internal.pageSize.getWidth();
-//       const pageHeight = pdf.internal.pageSize.getHeight();
-//       const imgWidth = pageWidth;
-//       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-//       let y = 0;
-//       pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
-//       let heightLeft = imgHeight - pageHeight;
-//       while (heightLeft > 0) {
-//         pdf.addPage();
-//         y = y - pageHeight;
-//         pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
-//         heightLeft -= pageHeight;
-//       }
-//       pdf.save(`${safeFileNameFromCompany(COMPANY.name)}_Offer_List.pdf`);
-//     } catch (e) {
-//       console.error(e);
-//       window.print();
-//     }
-//   }
-
-//   function sendWhatsApp() {
-//     const text = buildOrderText(cart.lines, cart.total);
-//     const num = sanitizePhoneForWa(COMPANY.whatsappNumber);
-//     const url = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
-//     window.open(url, "_blank");
-//   }
-
-//   return (
-//     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
-//       <CompanyHeader
-//         query={query}
-//         setQuery={setQuery}
-//         activeSection={activeSection}
-//         setActiveSection={setActiveSection}
-//       />
-
-//       <div ref={printableRef}>
-//         <main className="mx-auto max-w-7xl px-4 py-6">
-//           <ProductTable
-//             items={filtered}
-//             quantities={quantities}
-//             setQty={setQty}
-//           />
-//           <ProductCards
-//             items={filtered}
-//             quantities={quantities}
-//             setQty={setQty}
-//           />
-//         </main>
-
-//         <CartSummary
-//           count={cart.count}
-//           total={cart.total}
-//           onWA={sendWhatsApp}
-//           onPDF={generatePDF}
-//         />
-
-//         <CompanyFooter />
-//       </div>
-
-//       <FiltersDrawer
-//         activeSection={activeSection}
-//         onClear={() => setActiveSection(null)}
-//       />
-//     </div>
-//   );
-// }
-
 "use client";
+
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   Search,
-  ShoppingCart,
-  Percent,
-  Package,
-  Filter,
-  X,
   Phone,
   Mail,
   MessageCircle,
-  Globe,
   MapPin,
+  Share2,
+  ShoppingCart,
   FileDown,
+  Trash2,
 } from "lucide-react";
+  import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-/***** =========================================
- * COMPANY CONFIG (edit these)
- * ========================================= */
+/* ========= COMPANY CONFIG ========= */
 const COMPANY = {
   name: "QURESHI SOFT SYSTEM",
   tagline: "Fast, reliable pharmaceutical distribution",
@@ -732,452 +24,340 @@ const COMPANY = {
   email: "amjadqureshi@yahoo.com",
   addressShort: "Quetta, Pakistan",
   addressFull: "Resani center zarghoon road quetta, pakistan",
-  website: "www.winexports.com",
+  whatsappCountryCode: "92",
 };
 
-/***** =========================================
- * TYPES & HELPERS
- * ========================================= */
-type Item = {
-  code: string;
-  name: string;
-  offerPct: number;
-  bonus?: string;
-  tp: number;
-  section: string;
+/* ========= CONSTANTS ========= */
+// Render Bismillah using Unicode escapes so builds never choke on file encodings
+const BISMILLAH =
+  "\u0628\u0633\u0645\u0020\u0627\u0644\u0644\u0647\u0020\u0627\u0644\u0631\u062D\u0645\u0646\u0020\u0627\u0644\u0631\u062D\u064A\u0645";
+
+/* ========= TYPES ========= */
+type Product = {
+  id: string;
+  companyName: string;
+  productName: string;
+  available: boolean;
+  price: number;
+  offerPct?: number;
+  createdAt: string;
 };
 
-function currency(n: number) {
-  return new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(n);
+type CartLine = {
+  id: string;
+  companyName: string; // kept for app state, but not shown in PDF table anymore
+  productName: string;
+  qty: number;
+  price: number;
+  offerPct?: number;
+};
+
+/* ========= HELPERS ========= */
+function pkr(n: number) {
+  try {
+    return new Intl.NumberFormat("en-PK", {
+      style: "currency",
+      currency: "PKR",
+      maximumFractionDigits: 0,
+    }).format(n);
+  } catch {
+    return `Rs ${Math.round(n).toLocaleString()}`;
+  }
 }
-function sanitizePhoneForWa(num: string) {
-  return Array.from(num)
-    .filter((c) => c >= "0" && c <= "9")
-    .join("");
+function net(price: number, offer?: number) {
+  return typeof offer === "number" && offer > 0
+    ? Math.max(0, Math.round(price * (1 - offer / 100)))
+    : price;
+}
+function digitsOnly(s: string) {
+  return Array.from(s).filter((c) => c >= "0" && c <= "9").join("");
+}
+function formatPhoneForWa(raw: string, cc: string) {
+  const d = digitsOnly(raw);
+  const dcc = digitsOnly(cc || "");
+  if (!dcc) return d;
+  if (d.startsWith("00")) return d.slice(2);
+  if (d.startsWith("0")) return dcc + d.slice(1);
+  if (d.startsWith(dcc)) return d;
+  if (d.length >= 9 && d.length <= 11) return dcc + d;
+  return d;
 }
 function safeFileNameFromCompany(name: string) {
   return name.trim().split(" ").filter(Boolean).join("_");
 }
-function buildOrderText(
-  lines: { item: Item; qty: number; subtotal: number }[],
-  total: number
-) {
-  const head = `*${COMPANY.name}*\n${COMPANY.tagline}\n\n*Order Summary*`;
-  const rows = lines
-    .map(
-      ({ item, qty, subtotal }) =>
-        `• ${item.code} – ${item.name} x${qty} @ ${currency(item.tp)} (-${item.offerPct}%) = ${currency(subtotal)}`
-    )
-    .join("\n");
-  const foot = `\nTotal: *${currency(total)}*\nThanks!`;
-  return `${head}\n${rows}${foot}`;
+function orderNo() {
+  const d = new Date();
+  const pad = (n: number) => `${n}`.padStart(2, "0");
+  return `OL-${d.getFullYear().toString().slice(2)}${pad(d.getMonth() + 1)}${pad(
+    d.getDate()
+  )}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+function buildWhatsAppMinimal(lines: CartLine[]) {
+  const id = orderNo();
+  const d = new Date();
+  let grand = 0;
+  const itemLines = lines
+    .filter((l) => l.qty > 0)
+    .map((l) => {
+      const unit = net(l.price, l.offerPct);
+      const sub = unit * l.qty;
+      grand += sub;
+      return `${l.productName}\n  Qty: ${l.qty}  TP: ${pkr(unit)}  Sub: ${pkr(sub)}`;
+    });
+
+  const header = `${COMPANY.name}\nINVOICE: ${id}\nDATE: ${d.toLocaleDateString()}\n\n`;
+  const body = itemLines.length ? itemLines.join("\n\n") : "—";
+  const footer = `\n\n--------------------------------\nGRAND TOTAL: ${pkr(grand)}\n${
+    COMPANY.phone ? `Phone: ${COMPANY.phone}\n` : ""
+  }`;
+
+  return header + body + footer;
 }
 
-/***** =========================================
- * DEMO DATA (replace with API/DB)
- * ========================================= */
-const SEED: Item[] = [
-  { code: "170", name: "ACENAC SR CAP", offerPct: 2, bonus: ".", tp: 399.5, section: "A" },
-  { code: "121", name: "AGNAR TAB", offerPct: 2, bonus: ".", tp: 765.0, section: "A" },
-  { code: "168", name: "ALL D DROPS", offerPct: 8, bonus: ".", tp: 300.9, section: "A" },
-  { code: "138", name: "ANAFORTAN PLUS INJ", offerPct: 3, bonus: ".", tp: 626.19, section: "A" },
-  { code: "59", name: "AZOMAX 250MG CAP", offerPct: 3, bonus: ".", tp: 590.34, section: "A" },
-  { code: "129", name: "CARDIOLITE 25MG TAB", offerPct: 3, bonus: ".", tp: 514.25, section: "C" },
-  { code: "130", name: "CARDIOLITE 50MG TAB", offerPct: 4, bonus: ".", tp: 839.83, section: "C" },
-  { code: "275", name: "CATAFEN 50MG TAB", offerPct: 10, bonus: ".", tp: 163.2, section: "C" },
-  { code: "107", name: "CECLOR 125MG SYP", offerPct: 2, bonus: ".", tp: 340.0, section: "C" },
-  { code: "104", name: "CECLOR 250MG CAP", offerPct: 2, bonus: ".", tp: 531.25, section: "C" },
-  { code: "105", name: "CECLOR 500MG CAP", offerPct: 2, bonus: ".", tp: 952.0, section: "C" },
-  { code: "205", name: "CEFEXOL SYP", offerPct: 16, bonus: ".", tp: 242.49, section: "C" },
-  { code: "16", name: "CEFIGET DS SYP", offerPct: 2, bonus: ".", tp: 280.5, section: "C" },
-  { code: "117", name: "CEFXONE 1G INJ", offerPct: 25, bonus: ".", tp: 365.5, section: "C" },
-  { code: "111", name: "CEFXONE 500IV INJ", offerPct: 28, bonus: ".", tp: 233.75, section: "C" },
-  { code: "22", name: "FEXET 60MG TAB", offerPct: 2, bonus: ".", tp: 293.25, section: "F" },
-  { code: "203", name: "FLUCON 150MG CAP", offerPct: 2, bonus: ".", tp: 136.0, section: "F" },
-  { code: "119", name: "GABIX 300MG CAP", offerPct: 3, bonus: ".", tp: 271.48, section: "G" },
-  { code: "278", name: "GABLIN 75MG CAP", offerPct: 12, bonus: ".", tp: 412.34, section: "G" },
-  { code: "98", name: "OMEZOL 20MG CAP", offerPct: 16, bonus: ".", tp: 273.7, section: "O" },
-  { code: "279", name: "ORTHROFENAC INJ", offerPct: 22, bonus: ".", tp: 197.2, section: "O" },
-  { code: "110", name: "OSNATE D SYP", offerPct: 2, bonus: ".", tp: 481.41, section: "O" },
-  { code: "252", name: "OSNATE D TAB", offerPct: 1, bonus: ".", tp: 407.2, section: "O" },
-];
-const sections = Array.from(new Set(SEED.map((i) => i.section))).sort();
+/* ========= SMALL UI PARTS ========= */
+const Pill = ({ children }: { children: React.ReactNode }) => (
+  <span className="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-0.5 text-[11px] font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
+    {children}
+  </span>
+);
 
-/***** =========================================
- * REUSABLE COMPONENTS
- * ========================================= */
-
-// Typing effect for the company name (works with any name)
-function Typewriter({
-  text,
-  speed = 70,
-  startDelay = 300,
-  replayKey,
+function QtyInput({
+  value,
+  onChange,
+  label,
 }: {
-  text: string;
-  speed?: number;
-  startDelay?: number;
-  /** change this value to force a replay */
-  replayKey?: number | string;
+  value: number;
+  onChange: (n: number) => void;
+  label: string;
 }) {
-  const [i, setI] = React.useState(0);
-  const [showCursor, setShowCursor] = React.useState(true);
+  const clamp = (n: number) => Math.max(0, Math.min(9999, Math.floor(n || 0)));
+  const [delta, setDelta] = React.useState<number | null>(null);
+  const [animKey, setAnimKey] = React.useState(0);
+  const showDelta = (d: number) => {
+    if (!d) return;
+    setDelta(d);
+    setAnimKey((k) => k + 1);
+    window.setTimeout(() => setDelta(null), 650);
+  };
 
-  React.useEffect(() => {
-    // reset index whenever replayKey or the inputs change
-    setI(0);
+  const inc = () => {
+    const next = clamp((value || 0) + 1);
+    showDelta(next - (value || 0));
+    onChange(next);
+  };
+  const dec = () => {
+    const next = clamp((value || 0) - 1);
+    showDelta(next - (value || 0));
+    onChange(next);
+  };
 
-    let typeTimer: number | null = null;
-    let startTimer: number | null = null;
-    const blinkTimer: number = window.setInterval(() => setShowCursor((s) => !s), 530);
-
-    startTimer = window.setTimeout(() => {
-      typeTimer = window.setInterval(() => {
-        setI((prev) => {
-          if (prev >= text.length) {
-            if (typeTimer !== null) window.clearInterval(typeTimer);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, speed);
-    }, startDelay);
-
-    return () => {
-      if (startTimer !== null) window.clearTimeout(startTimer);
-      if (typeTimer !== null) window.clearInterval(typeTimer);
-      window.clearInterval(blinkTimer);
-    };
-  }, [text, speed, startDelay, replayKey]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = Number(e.currentTarget.value);
+    const next = clamp(v);
+    const d = next - (value || 0);
+    if (d) showDelta(d);
+    onChange(next);
+  };
 
   return (
-    <span aria-label={text} className="align-baseline">
-      {text.slice(0, i)}
-      <span className="inline-block w-2 select-none">{showCursor ? "|" : "\u00A0"}</span>
-    </span>
+    <div className="relative w-20">
+      {/* Inline +/− bubble */}
+      <div
+        key={animKey}
+        className={`pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-extrabold ${
+          delta ? "opacity-100" : "opacity-0"
+        } transition-all duration-500`}
+        style={{ transform: `translate(-50%, ${delta ? "-8px" : "0px"})` }}
+      >
+        {delta && (
+          <span
+            className={`rounded-full px-1.5 py-0.5 ring-1 ring-orange-300 ${
+              delta > 0 ? "bg-orange-600 text-white" : "bg-orange-50 text-orange-700"
+            }`}
+          >
+            {delta > 0 ? `+${delta}` : `${delta}`}
+          </span>
+        )}
+      </div>
+
+      <input
+        type="number"
+        min={0}
+        max={9999}
+        step={1}
+        aria-label={label}
+        value={Number.isFinite(value) ? value : 0}
+        onChange={handleChange}
+        className="w-full rounded-md border border-orange-300 bg-white pr-7 pl-2 py-1 text-center text-[13px] font-semibold text-orange-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+        placeholder="Qty"
+      />
+
+      {/* custom spinner */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 flex flex-col">
+        <button
+          type="button"
+          onClick={inc}
+          className="pointer-events-auto h-1/2 flex items-center justify-center rounded-tr-md border-l border-b border-orange-300 bg-orange-50 hover:bg-orange-100 active:bg-orange-200"
+          aria-label="Increase quantity"
+          tabIndex={-1}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" className="fill-orange-700"><path d="M7 14l5-5 5 5z"/></svg>
+        </button>
+        <button
+          type="button"
+          onClick={dec}
+          className="pointer-events-auto h-1/2 flex items-center justify-center rounded-br-md border-l border-orange-300 bg-orange-50 hover:bg-orange-100 active:bg-orange-200"
+          aria-label="Decrease quantity"
+          tabIndex={-1}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" className="fill-orange-700"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+      </div>
+
+      <style jsx global>{`
+        input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      `}</style>
+    </div>
   );
 }
 
-// 1) HEADER — tuned for <500px and up
+/* ========= HEADER ========= */
 function CompanyHeader({
   query,
   setQuery,
-  activeSection,
-  setActiveSection,
 }: {
   query: string;
   setQuery: (v: string) => void;
-  activeSection: string | null;
-  setActiveSection: (s: string | null) => void;
 }) {
-  // replay the typewriter when the tab regains focus (or component mounts)
-  const [replayKey, setReplayKey] = React.useState<number>(() => Date.now());
-  React.useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === "visible") {
-        setReplayKey(Date.now());
-      }
-    };
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
-  }, []);
   return (
-    <header className="sticky top-0 z-40 border-b border-white/10 bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-slate-900/95 backdrop-blur">
-      <div className="mx-auto max-w-7xl px-4 py-4">
-        {/* Brand + Name (mobile-first) */}
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="h-12 w-12 shrink-0 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 grid place-items-center shadow-xl">
-            <Package className="h-6 w-6 text-white" aria-hidden />
-          </div>
-          <div className="text-center sm:text-left w-full">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-300 via-indigo-400 to-purple-400 bg-clip-text text-transparent leading-tight">
-              <Typewriter text={COMPANY.name} speed={60} startDelay={250} replayKey={replayKey} />
-            </h1>
-            <p className="mt-1 text-[12px] sm:text-sm text-slate-300/90">
-              {COMPANY.tagline}
-            </p>
-          </div>
+    <header className="sticky top-0 z-40 border-b border-orange-200 bg-white/90 backdrop-blur">
+      <div className="bg-orange-50 text-orange-900">
+        <div className="mx-auto max-w-7xl px-4 py-2 text-center text-base sm:text-lg font-extrabold tracking-wide">
+          <span>{BISMILLAH}</span>
         </div>
+      </div>
 
-        {/* Meta chips + Search — wrap nicely under 500px */}
-        <div className="mt-3 flex flex-col gap-3 sm:mt-4 sm:flex-row sm:items-center">
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-200">
-              <MapPin className="h-4 w-4" /> {COMPANY.addressShort}
-            </span>
-            
+      <div className="mx-auto max-w-7xl px-4 py-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="text-lg sm:text-xl font-extrabold tracking-tight text-orange-900">
+            {COMPANY.name}
           </div>
-
-          <div className="sm:ml-auto w-full sm:w-[360px] relative">
-            <label htmlFor="hdr-search" className="sr-only">
-              Search products
-            </label>
+          <div className="sm:ml-6 text-[12px] text-orange-700">{COMPANY.tagline}</div>
+          <div className="sm:ml-auto relative w-full sm:w-96">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600" />
             <input
-              id="hdr-search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by code, name, or %"
-              className="w-full rounded-2xl bg-slate-800/70 border border-white/10 px-4 py-2.5 pl-11 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <Search
-              className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300"
-              aria-hidden
+              placeholder="Search company or item"
+              className="w-full rounded-lg bg-white border border-orange-300 pl-9 pr-3 py-2 text-sm text-orange-900 placeholder-orange-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
             />
           </div>
-        </div>
-
-        {/* Section chips */}
-        <div className="mt-3 flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          <button
-            onClick={() => setActiveSection(null)}
-            className={`px-3 py-1 rounded-xl border text-xs whitespace-nowrap ${
-              activeSection === null
-                ? "bg-indigo-600 border-indigo-500"
-                : "bg-white/5 border-white/10"
-            }`}
-          >
-            All
-          </button>
-          {sections.map((s) => (
-            <button
-              key={s}
-              onClick={() => setActiveSection(s)}
-              className={`px-3 py-1 rounded-xl border text-xs whitespace-nowrap ${
-                activeSection === s
-                  ? "bg-indigo-600 border-indigo-500"
-                  : "bg-white/5 border-white/10"
-              }`}
-            >
-              {s}
-            </button>
-          ))}
         </div>
       </div>
     </header>
   );
 }
 
-// 2) PRODUCT TABLE (desktop ≥768px)
-function ProductTable({
-  items,
-  quantities,
-  setQty,
-}: {
-  items: Item[];
-  quantities: Record<string, number>;
-  setQty: (code: string, qty: number) => void;
-}) {
+/* ========= FOOTER ========= */
+function CompanyFooter() {
   return (
-    <div className="hidden md:block">
-      <div className="overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-800/70">
-            <tr className="text-left">
-              <th className="px-4 py-3">Code</th>
-              <th className="px-4 py-3">Item Name</th>
-              <th className="px-4 py-3">Order</th>
-              <th className="px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <Percent className="h-4 w-4" /> Offer
-                </div>
-              </th>
-              <th className="px-4 py-3">Bonus</th>
-              <th className="px-4 py-3">T.P</th>
-              <th className="px-4 py-3">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((i) => {
-              const qty = quantities[i.code] || 0;
-              const subtotal = qty * i.tp * (1 - i.offerPct / 100);
-              return (
-                <tr
-                  key={i.code}
-                  className="border-t border-white/10 hover:bg-slate-800/40"
-                >
-                  <td className="px-4 py-3 font-medium text-slate-200">
-                    {i.code}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center rounded-lg bg-slate-700/60 px-2 py-0.5 text-[10px] font-semibold text-slate-200">
-                        {i.section}
-                      </span>
-                      <span>{i.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 w-44">
-                    <div className="flex items-center gap-2">
-                      <button
-                        aria-label="Decrease"
-                        className="px-2 py-1 rounded-lg bg-slate-800/70 border border-white/10"
-                        onClick={() => setQty(i.code, qty - 1)}
-                      >
-                        -
-                      </button>
-                      <input
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={qty}
-                        onChange={(e) =>
-                          setQty(i.code, Number(e.currentTarget.value || 0))
-                        }
-                        className="w-20 text-center rounded-lg bg-slate-900/70 border border-white/10 py-1"
-                        aria-label={`Quantity for ${i.name}`}
-                      />
-                      <button
-                        aria-label="Increase"
-                        className="px-2 py-1 rounded-lg bg-slate-800/70 border border-white/10"
-                        onClick={() => setQty(i.code, qty + 1)}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-semibold">{i.offerPct}%</td>
-                  <td className="px-4 py-3 text-slate-300">{i.bonus || "-"}</td>
-                  <td className="px-4 py-3 font-medium">{currency(i.tp)}</td>
-                  <td className="px-4 py-3 font-semibold">
-                    {qty ? currency(subtotal) : "—"}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// 3) PRODUCT CARDS (mobile <768px)
-function ProductCards({
-  items,
-  quantities,
-  setQty,
-}: {
-  items: Item[];
-  quantities: Record<string, number>;
-  setQty: (code: string, qty: number) => void;
-}) {
-  return (
-    <div className="md:hidden space-y-3">
-      {items.map((i) => {
-        const qty = quantities[i.code] || 0;
-        const subtotal = qty * i.tp * (1 - i.offerPct / 100);
-        return (
-          <div
-            key={i.code}
-            className="rounded-2xl border border-white/10 bg-slate-900/60 p-4 shadow-xl"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="inline-flex items-center rounded-lg bg-slate-800/70 px-2 py-0.5 text-[10px] font-semibold text-slate-200">
-                    {i.section}
-                  </span>
-                  <span className="text-xs text-slate-400">#{i.code}</span>
-                </div>
-                <h3 className="text-base font-semibold leading-tight">
-                  {i.name}
-                </h3>
-                <div className="mt-2 flex items-center gap-2 text-sm">
-                  <span className="inline-flex items-center gap-1 rounded-xl bg-indigo-600/20 px-2 py-0.5 border border-indigo-500/40">
-                    <Percent className="h-4 w-4" />
-                    {i.offerPct}%
-                  </span>
-                  <span className="text-slate-300">TP: {currency(i.tp)}</span>
-                  <span className="text-slate-400">Bonus: {i.bonus || "-"}</span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <button
-                aria-label="Decrease"
-                className="px-3 py-2 rounded-xl bg-slate-800/70 border border-white/10"
-                onClick={() => setQty(i.code, qty - 1)}
-              >
-                -
-              </button>
-              <input
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={qty}
-                onChange={(e) => setQty(i.code, Number(e.currentTarget.value || 0))}
-                className="w-20 text-center rounded-xl bg-slate-950/70 border border-white/10 py-2"
-                aria-label={`Quantity for ${i.name}`}
-              />
-              <button
-                aria-label="Increase"
-                className="px-3 py-2 rounded-xl bg-slate-800/70 border border-white/10"
-                onClick={() => setQty(i.code, qty + 1)}
-              >
-                +
-              </button>
-              <div className="ml-auto text-right">
-                <div className="text-xs text-slate-400">Subtotal</div>
-                <div className="text-base font-semibold">
-                  {qty ? currency(subtotal) : "—"}
-                </div>
-              </div>
-            </div>
+    <footer className="mt-8 border-t border-orange-200 bg-orange-50/60">
+      <div className="mx-auto max-w-7xl px-4 py-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-orange-900">
+        <div className="space-y-1">
+          <div className="font-semibold break-words">{COMPANY.name}</div>
+          <div className="text-orange-700 break-words">{COMPANY.tagline}</div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-start gap-2 break-words">
+            <MessageCircle className="h-4 w-4 mt-0.5 text-orange-700" />
+            <span>WhatsApp: {COMPANY.whatsappNumber}</span>
           </div>
-        );
-      })}
-    </div>
+          <div className="flex items-start gap-2 break-words">
+            <Phone className="h-4 w-4 mt-0.5 text-orange-700" />
+            <span>{COMPANY.phone}</span>
+          </div>
+          <div className="flex items-start gap-2 break-words">
+            <Mail className="h-4 w-4 mt-0.5 text-orange-700" />
+            <span className="break-words">{COMPANY.email}</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-start gap-2 break-words">
+            <MapPin className="h-4 w-4 mt-0.5 text-orange-700" />
+            <span className="break-words">{COMPANY.addressFull}</span>
+          </div>
+        </div>
+      </div>
+    </footer>
   );
 }
 
-// 4) CART SUMMARY
+/* ========= CART SUMMARY ========= */
 function CartSummary({
   count,
-  total,
-  onWA,
-  onPDF,
+  onWhatsApp,
+  onDownloadPDF,
+  onClearCart,
+  customerName,
+  setCustomerName,
+  delta,
 }: {
   count: number;
-  total: number;
-  onWA: () => void;
-  onPDF: () => void;
+  onWhatsApp: () => void;
+  onDownloadPDF: () => void;
+  onClearCart: () => void;
+  customerName: string;
+  setCustomerName: (v: string) => void;
+  delta: number;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-2">
-      <div className="rounded-2xl border border-white/10 bg-slate-900/70 shadow-xl px-4 py-4 sm:py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        {/* Left: icon + cart meta */}
-        <div className="flex items-start sm:items-center gap-3">
-          <div className="shrink-0 grid place-items-center h-9 w-9 rounded-lg bg-white/5 border border-white/10">
-            <ShoppingCart className="h-5 w-5" aria-hidden />
+    <section className="mx-auto max-w-7xl px-4 pb-2 mt-5">
+      <div className="rounded-2xl border border-orange-200 bg-white shadow-sm px-3 py-3 flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 grid place-items-center h-9 w-9 rounded-xl bg-orange-50 ring-1 ring-orange-200 relative">
+            <ShoppingCart className="h-4 w-4 text-orange-700" />
+            {delta !== 0 && (
+              <span className={`absolute -top-2 -right-2 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ring-1 ring-orange-300 ${delta > 0 ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-700'}`}>{delta > 0 ? `+${delta}` : delta}</span>
+            )}
           </div>
           <div className="text-sm">
-            <div className="font-semibold leading-tight">
+            <div className="font-bold leading-tight text-orange-900">
               {count} item{count === 1 ? "" : "s"} in cart
             </div>
-            <div className="text-slate-300">Estimated total after discount</div>
+            <div className="text-[12px] text-orange-700">Customer name is required for the PDF.</div>
+          </div>
+          <div className="ml-auto w-full sm:w-80 relative">
+            <input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="Customer Name"
+              className="w-full rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm text-orange-900 placeholder-orange-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+            />
           </div>
         </div>
-
-        {/* Total (stacks under 500px) */}
-        <div className="sm:ml-auto text-left sm:text-right">
-          <div className="text-xs text-slate-400">Total</div>
-          <div className="text-xl sm:text-lg font-bold">{currency(total)}</div>
-        </div>
-
-        {/* Actions: wrap on small, inline on larger */}
-        <div className="w-full sm:w-auto sm:ml-2 flex flex-col xs:flex-row sm:flex-row gap-2 sm:gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <button
-            onClick={onWA}
-            className="w-full sm:w-auto justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition px-3 py-2 text-sm font-semibold inline-flex items-center gap-2"
+            onClick={onWhatsApp}
+            className="w-full rounded-lg bg-orange-600 hover:bg-orange-700 active:bg-orange-800 transition px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2 text-white"
+            title="Share invoice via WhatsApp (PDF when possible)"
           >
-            <MessageCircle className="h-4 w-4" /> Send WhatsApp
+            <Share2 className="h-4 w-4" /> WhatsApp Invoice
           </button>
           <button
-            onClick={onPDF}
-            className="w-full sm:w-auto justify-center rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 transition px-3 py-2 text-sm font-semibold inline-flex items-center gap-2"
+            onClick={onDownloadPDF}
+            className="w-full rounded-lg bg-orange-600 hover:bg-orange-700 active:bg-orange-800 transition px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2 text-white"
+            title="Download invoice PDF"
           >
-            <FileDown className="h-4 w-4" /> Generate PDF
+            <FileDown className="h-4 w-4" /> Download PDF
+          </button>
+          <button
+            onClick={onClearCart}
+            className="w-full rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2 text-orange-800 hover:bg-orange-50 active:bg-orange-100"
+            title="Clear all quantities"
+          >
+            <Trash2 className="h-4 w-4" /> Clear Cart
           </button>
         </div>
       </div>
@@ -1185,265 +365,432 @@ function CartSummary({
   );
 }
 
-// 5) FOOTER
-function CompanyFooter() {
-  return (
-    <footer className="mt-10 border-t border-white/10">
-      <div className="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-        <div className="space-y-1">
-          <div className="font-semibold text-slate-200 break-words">{COMPANY.name}</div>
-          <div className="text-slate-400 break-words">{COMPANY.tagline}</div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-start gap-2 break-words">
-            <MessageCircle className="h-4 w-4 mt-0.5" /> <span>WhatsApp: {COMPANY.whatsappNumber}</span>
-          </div>
-          <div className="flex items-start gap-2 break-words">
-            <Phone className="h-4 w-4 mt-0.5" /> <span>{COMPANY.phone}</span>
-          </div>
-          <div className="flex items-start gap-2 break-words">
-            <Mail className="h-4 w-4 mt-0.5" /> <span className="break-words">{COMPANY.email}</span>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-start gap-2 break-words">
-            <MapPin className="h-4 w-4 mt-0.5" /> <span className="break-words">{COMPANY.addressFull}</span>
-          </div>
-          <a
-            href={`https://${COMPANY.website.replace(/^https?:\/\//, "")}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 hover:underline break-words"
-          >
-            <Globe className="h-4 w-4" /> <span className="break-words">{COMPANY.website}</span>
-          </a>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// 6) FILTERS DRAWER (stub)
-function FiltersDrawer({
-  activeSection,
-  onClear,
-}: {
-  activeSection: string | null;
-  onClear: () => void;
-}) {
-  return (
-    <div className="fixed right-4 bottom-24 md:bottom-8">
-      <div className="rounded-full shadow-2xl overflow-hidden border border-white/10">
-        <button className="bg-slate-900/90 backdrop-blur px-3 py-2 flex items-center gap-2 text-sm">
-          <Filter className="h-4 w-4" /> Filters{" "}
-          {activeSection ? (
-            <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-indigo-600/20 px-2 py-0.5 border border-indigo-500/40 text-xs">
-              {activeSection} <X className="h-3 w-3" onClick={onClear} />
-            </span>
-          ) : null}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/***** =========================================
- * DEV CHECKS (lightweight tests run in dev only)
- * ========================================= */
-function runDevChecks() {
-  try {
-    const sample = SEED[0];
-    const qty = 2;
-    const subtotal = qty * sample.tp * (1 - sample.offerPct / 100);
-    const txt = buildOrderText([{ item: sample, qty, subtotal }], subtotal);
-    console.assert(txt.includes("*Order Summary*"), "buildOrderText should contain section heading");
-    console.assert(txt.includes(sample.code) && txt.includes(sample.name), "buildOrderText should include code & name");
-    console.assert(txt.includes("x2"), "buildOrderText should include quantity");
-  } catch (e) {
-    console.warn("Dev checks failed:", e);
-  }
-}
-
-/***** =========================================
- * MAIN PAGE (composed from components)
- * ========================================= */
+/* ========= MAIN PAGE ========= */
 export default function OfferList() {
   const [query, setQuery] = useState("");
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const printableRef = useRef<HTMLDivElement | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [customerName, setCustomerName] = useState("");
+  const [cartDelta, setCartDelta] = useState(0);
 
+  // off-screen invoice node (pure inline CSS; black & white)
+  const invoiceRef = useRef<HTMLDivElement | null>(null);
+
+  /* Load API data from dashboard */
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production") runDevChecks();
+    (async () => {
+      try {
+        const res = await fetch("/api/products", { cache: "no-store" });
+        const data = (await res.json()) as Product[];
+        setProducts(
+          Array.isArray(data)
+            ? data
+                .filter((p) => p.available)
+                .sort(
+                  (a, b) =>
+                    a.companyName.localeCompare(b.companyName) ||
+                    a.productName.localeCompare(b.productName)
+                )
+            : []
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return SEED.filter((i) => {
-      const matchesQuery =
-        !q ||
-        i.name.toLowerCase().includes(q) ||
-        i.code.includes(q) ||
-        `${i.offerPct}%`.includes(q);
-      const matchesSection = !activeSection || i.section === activeSection;
-      return matchesQuery && matchesSection;
-    });
-  }, [query, activeSection]);
-
-  const cart = useMemo(() => {
-    const lines = Object.entries(quantities)
-      .filter(([, qty]) => qty > 0)
-      .map(([code, qty]) => {
-        const item = SEED.find((i) => i.code === code)!;
-        const subtotal = qty * item.tp * (1 - item.offerPct / 100);
-        return { item, qty, subtotal };
-      });
-    const total = lines.reduce((sum, l) => sum + l.subtotal, 0);
-    const count = lines.reduce((sum, l) => sum + l.qty, 0);
-    return { lines, total, count };
+  /* Restore/save cart + customer name */
+  useEffect(() => {
+    const prev = window.localStorage.getItem("offer-quantities");
+    if (prev) setQuantities(JSON.parse(prev));
+    const prevName = window.localStorage.getItem("offer-customer-name");
+    if (prevName) setCustomerName(prevName);
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem("offer-quantities", JSON.stringify(quantities));
   }, [quantities]);
+  useEffect(() => {
+    window.localStorage.setItem("offer-customer-name", customerName);
+  }, [customerName]);
 
-  function setQty(code: string, qty: number) {
-    setQuantities((q) => ({
-      ...q,
-      [code]: Math.max(0, Math.min(9999, Math.floor(qty))),
-    }));
+  /* Grouped list + search */
+  const groups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = !q
+      ? products
+      : products.filter(
+          (p) =>
+            p.productName.toLowerCase().includes(q) ||
+            p.companyName.toLowerCase().includes(q)
+        );
+    const g: Record<string, Product[]> = {};
+    for (const p of list) (g[p.companyName] ||= []).push(p);
+    return g;
+  }, [products, query]);
+
+  /* Cart-only lines */
+  const cartLines: CartLine[] = useMemo(() => {
+    const ls: CartLine[] = [];
+    for (const p of products) {
+      const qty = quantities[p.id] || 0;
+      if (qty > 0)
+        ls.push({
+          id: p.id,
+          companyName: p.companyName,
+          productName: p.productName,
+          qty,
+          price: p.price,
+          offerPct: p.offerPct,
+        });
+    }
+    return ls;
+  }, [products, quantities]);
+
+  // total qty for cart + delta animation
+  const totalQty = useMemo(
+    () => cartLines.reduce((s, l) => s + l.qty, 0),
+    [cartLines]
+  );
+
+  // delta anim (no missing-deps warning pattern)
+  const prevTotalRef = useRef(totalQty);
+  useEffect(() => {
+    const prev = prevTotalRef.current;
+    const d = totalQty - prev;
+    prevTotalRef.current = totalQty;
+    if (d !== 0) {
+      setCartDelta(d);
+      const t = window.setTimeout(() => setCartDelta(0), 700);
+      return () => window.clearTimeout(t);
+    }
+  }, [totalQty]);
+
+  function setQty(id: string, qty: number) {
+    const clean = Math.max(0, Math.min(9999, Math.floor(qty || 0)));
+    setQuantities((q) => ({ ...q, [id]: clean }));
   }
 
-  // Load cart once on mount
-  useEffect(() => {
-    const key = "offerlist-cart";
-    const prev = window.localStorage.getItem(key);
-    if (prev) setQuantities(JSON.parse(prev));
-  }, []);
+  function clearCart() {
+    setQuantities({});
+  }
 
-  // Persist cart on change
-  useEffect(() => {
-    window.localStorage.setItem("offerlist-cart", JSON.stringify(quantities));
-  }, [quantities]);
+  /* ===== PDF (B/W, off-screen invoice ONLY) ===== */
+  async function generatePDFBlob(): Promise<Blob | null> {
+    const node = invoiceRef.current;
+    if (!node) return null;
 
-  // Types for dynamic modules
-  type JsPDFConstructor = new (options?: {
-    orientation?: string;
-    unit?: string;
-    format?: string;
-  }) => {
-    internal: { pageSize: { getWidth(): number; getHeight(): number } };
-    addImage: (
-      imgData: string,
-      format: string,
-      x: number,
-      y: number,
-      w: number,
-      h: number
-    ) => void;
-    addPage: () => void;
-    save: (filename: string) => void;
-  };
+    // ensure visible off-screen for html2canvas; keep pure B/W
+    const prevVis = node.style.visibility;
+    const prevPos = node.style.position;
+    const prevLeft = node.style.left;
+    node.style.visibility = "visible";
+    node.style.position = "fixed";
+    node.style.left = "-10000px";
 
-  type Html2CanvasFn = (
-    element: HTMLElement,
-    options?: { scale?: number; backgroundColor?: string }
-  ) => Promise<HTMLCanvasElement>;
-
-  async function generatePDF() {
     try {
-      const jsPdfMod: unknown = await import("jspdf");
-      const html2canvasMod: unknown = await import("html2canvas");
-
-      let JsPDF: JsPDFConstructor | undefined;
-      const m1 = jsPdfMod as Record<string, unknown>;
-      if (typeof m1 === "function") {
-        JsPDF = m1 as unknown as JsPDFConstructor;
-      } else if (m1 && typeof m1 === "object") {
-        if ("jsPDF" in m1 && typeof m1.jsPDF === "function") {
-          JsPDF = m1.jsPDF as JsPDFConstructor;
-        } else if ("default" in m1 && m1.default && typeof (m1.default as Record<string, unknown>).jsPDF === "function") {
-          JsPDF = (m1.default as Record<string, unknown>).jsPDF as JsPDFConstructor;
-        } else if ("default" in m1 && typeof m1.default === "function") {
-          JsPDF = m1.default as unknown as JsPDFConstructor;
-        }
-      }
-
-      const h2cObj = html2canvasMod as Record<string, unknown>;
-      const html2canvas: Html2CanvasFn = (
-        (h2cObj && typeof h2cObj === "object" && (h2cObj.default as Html2CanvasFn)) ||
-        (h2cObj as unknown as Html2CanvasFn)
-      );
-
-      const node = printableRef.current;
-      if (!node || !JsPDF || !html2canvas) return;
-
       const canvas = await html2canvas(node, {
         scale: 2,
-        backgroundColor: "#0b1220",
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
       });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new JsPDF({ orientation: "p", unit: "pt", format: "a4" });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const img = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
       let y = 0;
-      pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
-      let heightLeft = imgHeight - pageHeight;
-      while (heightLeft > 0) {
+      pdf.addImage(img, "PNG", 0, y, imgW, imgH);
+      let left = imgH - pageH;
+      while (left > 0) {
         pdf.addPage();
-        y -= pageHeight;
-        pdf.addImage(imgData, "PNG", 0, y, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        y -= pageH;
+        pdf.addImage(img, "PNG", 0, y, imgW, imgH);
+        left -= pageH;
       }
-      pdf.save(`${safeFileNameFromCompany(COMPANY.name)}_Offer_List.pdf`);
-    } catch (e) {
-      console.error("PDF generation failed; falling back to print()", e);
-      window.print();
+      return pdf.output("blob");
+    } catch {
+      return null;
+    } finally {
+      node.style.visibility = prevVis;
+      node.style.position = prevPos;
+      node.style.left = prevLeft;
     }
   }
 
-  function sendWhatsApp() {
-    const text = buildOrderText(cart.lines, cart.total);
-    const num = sanitizePhoneForWa(COMPANY.whatsappNumber);
-    const url = `https://wa.me/${num}?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
+  // Download button
+  async function handleDownloadPDF() {
+    if (cartLines.length === 0) return;
+    const blob = await generatePDFBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${safeFileNameFromCompany(COMPANY.name)}_Invoice_${orderNo()}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  /** Try to share PDF; fallback to WhatsApp text */
+  async function handleWhatsApp() {
+    const number = formatPhoneForWa(COMPANY.whatsappNumber, COMPANY.whatsappCountryCode);
+
+    if (cartLines.length > 0) {
+      const blob = await generatePDFBlob();
+      if (blob) {
+        try {
+          const file = new File(
+            [blob],
+            `${safeFileNameFromCompany(COMPANY.name)}_Invoice_${orderNo()}.pdf`,
+            { type: "application/pdf" }
+          );
+
+          type NavigatorWithShare = Navigator & {
+            canShare?: (data?: ShareData) => boolean;
+            share?: (data: ShareData) => Promise<void>;
+          };
+          const nav: NavigatorWithShare = navigator;
+
+          const shareData: ShareData = {
+            title: "Invoice",
+            text: `${COMPANY.name} — Order Invoice`,
+            files: [file] as File[],
+          };
+
+          if (nav.canShare && nav.share && nav.canShare(shareData)) {
+            await nav.share(shareData);
+            return;
+          }
+        } catch {
+          // fall back to text
+        }
+      }
+    }
+
+    const text = buildWhatsAppMinimal(cartLines);
+    const waMe = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+    const waScheme = `whatsapp://send?phone=${number}&text=${encodeURIComponent(text)}`;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = waScheme;
+      setTimeout(() => window.open(waMe, "_blank"), 700);
+    } else {
+      window.open(waMe, "_blank");
+    }
+  }
+
+  // tiny dev self-checks
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    (function test_buildWhatsAppMinimal() {
+      const lines: CartLine[] = [
+        { id: "1", companyName: "X", productName: "Item A", qty: 2, price: 100, offerPct: 10 },
+        { id: "2", companyName: "X", productName: "Item B", qty: 1, price: 50 },
+      ];
+      const t = buildWhatsAppMinimal(lines);
+      console.assert(t.includes("INVOICE:"), "Invoice header missing");
+      console.assert(t.includes("GRAND TOTAL"), "Grand total missing");
+    })();
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
-      <CompanyHeader
-        query={query}
-        setQuery={setQuery}
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-      />
+    <div className="min-h-screen bg-white text-orange-900">
+      <CompanyHeader query={query} setQuery={setQuery} />
 
-      <div ref={printableRef}>
-        <main className="mx-auto max-w-7xl px-4 py-6">
-          <ProductTable
-            items={filtered}
-            quantities={quantities}
-            setQty={setQty}
-          />
-          <ProductCards
-            items={filtered}
-            quantities={quantities}
-            setQty={setQty}
-          />
-        </main>
+      <main className="mx-auto max-w-7xl px-4 py-4">
+        {/* GROUPED TABLE (compact rows) */}
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(4)].map((_, gi) => (
+              <div key={gi} className="rounded-2xl border border-orange-200 bg-white shadow-sm">
+                <div className="px-3 py-2 font-semibold text-orange-900 border-b border-orange-200">Loading…</div>
+                <ul className="divide-y divide-orange-100">
+                  {[...Array(4)].map((_, i) => (
+                    <li key={i} className="h-10 px-3 animate-pulse" />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : Object.keys(groups).length === 0 ? (
+          <div className="rounded-2xl border border-orange-200 bg-white p-6 text-center text-orange-700">No products available.</div>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(groups).map(([company, list]) => (
+              <section key={company} className="rounded-2xl border border-orange-200 bg-white shadow-sm">
+                {/* Company heading */}
+                <div className="px-3 py-2 flex items-center gap-2 border-b border-orange-200">
+                  <span className="font-bold text-orange-900">{company}</span>
+                  <Pill>Items: {list.length}</Pill>
+                </div>
 
+                {/* Column headings */}
+                <div className="px-3 py-1 text-[11px] font-bold text-orange-900 grid grid-cols-12">
+                  <div className="col-span-7">ITEM NAME</div>
+                  <div className="col-span-2 text-center">QTY</div>
+                  <div className="col-span-1 text-right">OFFER</div>
+                  <div className="col-span-2 text-right">T.P</div>
+                </div>
+
+                {/* Rows */}
+                <ul className="divide-y divide-orange-100">
+                  {list.map((p) => {
+                    const qty = quantities[p.id] || 0;
+                    return (
+                      <li key={p.id} className="h-10 px-3">
+                        <div className="h-full grid grid-cols-12 items-center gap-2">
+                          <div className="col-span-7 min-w-0 truncate text-[13px]">{p.productName}</div>
+                          <div className="col-span-2 flex justify-center">
+                            <QtyInput value={qty} onChange={(n) => setQty(p.id, n)} label={`Qty for ${p.productName}`} />
+                          </div>
+                          <div className="col-span-1 text-right text-[12px] text-orange-700">{p.offerPct ? `${p.offerPct}%` : "—"}</div>
+                          <div className="col-span-2 text-right text-[12px]">{pkr(p.price)}</div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+
+        {/* ACTIONS: WhatsApp + Download + Clear */}
         <CartSummary
-          count={cart.count}
-          total={cart.total}
-          onWA={sendWhatsApp}
-          onPDF={generatePDF}
+          count={totalQty}
+          onWhatsApp={handleWhatsApp}
+          onDownloadPDF={handleDownloadPDF}
+          onClearCart={clearCart}
+          customerName={customerName}
+          setCustomerName={setCustomerName}
+          delta={cartDelta}
         />
+      </main>
 
-        <CompanyFooter />
+      <CompanyFooter />
+
+      {/* ====== OFF-SCREEN INVOICE (B/W, inline styles only) ====== */}
+      <div
+        ref={invoiceRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: "-10000px",
+          top: 0,
+          width: "794px", // ~A4 width at 96dpi
+          background: "#ffffff",
+          padding: "32px",
+          color: "#000000",
+          fontFamily:
+            "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,Ubuntu,Segoe UI Emoji,Segoe UI Symbol",
+        }}
+      >
+        {/* Top heading (keep as is) */}
+        <h1
+          style={{
+            textAlign: "center",
+            fontSize: 22,
+            fontWeight: 800,
+            color: "#000000",
+            margin: 0,
+            marginBottom: 10,
+          }}
+        >
+          {COMPANY.name}
+        </h1>
+
+        {/* Bigger, clearer meta row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            fontSize: 14,            // larger & clearer
+            fontWeight: 700,         // bold
+            marginBottom: 14,
+          }}
+        >
+          <div>INVOICE # {orderNo()}</div>
+          <div>DATE {new Date().toLocaleDateString()}</div>
+          <div>CUSTOMER {customerName || "—"}</div>
+        </div>
+
+        {/* Flat table: ITEM NAME | QTY | TOTAL PRICE */}
+        {cartLines.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#000000" }}>No items.</div>
+        ) : (
+          (() => {
+            let grand = 0;
+            return (
+              <div>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      {["ITEM NAME", "QTY", "TOTAL PRICE"].map((h, i) => (
+                        <th
+                          key={h}
+                          style={{
+                            border: "1px solid #000000",
+                            textAlign: i === 0 ? "left" : i === 1 ? "center" : "right",
+                            padding: "8px 10px",
+                            fontWeight: 800,
+                            background: "#ffffff",
+                            color: "#000000",
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cartLines.map((l) => {
+                      const total = net(l.price, l.offerPct) * l.qty;
+                      grand += total;
+                      return (
+                        <tr key={l.id}>
+                          <td style={{ border: "1px solid #000000", padding: "8px 10px" }}>
+                            {l.productName}
+                          </td>
+                          <td style={{ border: "1px solid #000000", textAlign: "center", padding: "8px 10px" }}>
+                            {l.qty}
+                          </td>
+                          <td style={{ border: "1px solid #000000", textAlign: "right", padding: "8px 10px" }}>
+                            {pkr(total)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {/* Grand total (bold & clear) */}
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: "#000000",
+                  }}
+                >
+                  Grand Total: {pkr(grand)}
+                </div>
+              </div>
+            );
+          })()
+        )}
       </div>
-
-      <FiltersDrawer
-        activeSection={activeSection}
-        onClear={() => setActiveSection(null)}
-      />
     </div>
   );
 }

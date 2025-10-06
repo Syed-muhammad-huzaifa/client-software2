@@ -1,0 +1,36 @@
+[
+  {
+    "id": "1jvjcg50bko",
+    "companyName": "ABC",
+    "productName": "panadol",
+    "available": true,
+    "createdAt": "2025-10-06T17:20:28.866Z",
+    "price": 333
+  },
+  {
+    "id": "png8i784o8r",
+    "companyName": "BCS",
+    "productName": "postan2",
+    "available": true,
+    "createdAt": "2025-10-06T17:20:41.608Z",
+    "price": 222
+  },
+  {
+    "id": "goe05xvixh",
+    "companyName": "ABC",
+    "productName": "calpol",
+    "available": true,
+    "createdAt": "2025-10-06T17:21:01.759Z",
+    "price": 22,
+    "offerPct": 2
+  },
+  {
+    "id": "l28b5qe1hdo",
+    "companyName": "ABD",
+    "productName": "postan",
+    "available": true,
+    "createdAt": "2025-10-06T20:14:17.233Z",
+    "price": 300,
+    "offerPct": 1
+  }
+]
