@@ -11,16 +11,31 @@ export type Product = {
   createdAt: string;
 
   // NEW FIELDS
-  price: number;       // required total/unit price
-  offerPct?: number;   // optional discount percentage (0..100)
+  price: number; // required total/unit price
+  offerPct?: number; // optional discount percentage (0..100)
 };
 
-const filePath = path.join(process.cwd(), "data", "products.json");
+const projectDataFile = path.join(process.cwd(), "data", "products.json");
+const runtimeDataFile = (() => {
+  if (process.env.PRODUCTS_STORAGE_PATH) {
+    return process.env.PRODUCTS_STORAGE_PATH;
+  }
+  if (process.env.VERCEL === "1" || process.env.PRODUCTS_USE_TMP === "1") {
+    return path.join("/tmp", "products.json");
+  }
+  return projectDataFile;
+})();
 
 function ensureFile() {
-  const dir = path.dirname(filePath);
+  const dir = path.dirname(runtimeDataFile);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, "[]", "utf-8");
+  if (!fs.existsSync(runtimeDataFile)) {
+    if (runtimeDataFile !== projectDataFile && fs.existsSync(projectDataFile)) {
+      fs.copyFileSync(projectDataFile, runtimeDataFile);
+    } else {
+      fs.writeFileSync(runtimeDataFile, "[]", "utf-8");
+    }
+  }
 }
 
 // Use Record<string, unknown> for flexible unknown JSON
@@ -63,7 +78,7 @@ function normalizeRow(p: Record<string, unknown>): Product {
 
 export function listProducts(): Product[] {
   ensureFile();
-  const raw = fs.readFileSync(filePath, "utf-8") || "[]";
+  const raw = fs.readFileSync(runtimeDataFile, "utf-8") || "[]";
   let arr: unknown = [];
   try {
     arr = JSON.parse(raw);
@@ -76,7 +91,7 @@ export function listProducts(): Product[] {
 
 export function saveProducts(items: Product[]) {
   ensureFile();
-  fs.writeFileSync(filePath, JSON.stringify(items, null, 2), "utf-8");
+  fs.writeFileSync(runtimeDataFile, JSON.stringify(items, null, 2), "utf-8");
 }
 
 // Overloads
