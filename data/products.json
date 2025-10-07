@@ -1,6 +1,7 @@
 [
   {
     "id": "1jvjcg50bko",
+    "itemCode": "admin",
     "companyName": "ABC",
     "productName": "panadol",
     "available": true,
@@ -9,6 +10,7 @@
   },
   {
     "id": "png8i784o8r",
+    "itemCode": "BCS-POSTAN2",
     "companyName": "BCS",
     "productName": "postan2",
     "available": true,
@@ -17,6 +19,7 @@
   },
   {
     "id": "goe05xvixh",
+    "itemCode": "ABC-CALPOL",
     "companyName": "ABC",
     "productName": "calpol",
     "available": true,
@@ -26,11 +29,22 @@
   },
   {
     "id": "l28b5qe1hdo",
+    "itemCode": "ABD-POSTAN",
     "companyName": "ABD",
     "productName": "postan",
     "available": true,
     "createdAt": "2025-10-06T20:14:17.233Z",
     "price": 300,
+    "offerPct": 1
+  },
+  {
+    "id": "7ps3vog86vf",
+    "itemCode": "W",
+    "companyName": "shhs",
+    "productName": "hhs",
+    "available": true,
+    "createdAt": "2025-10-07T15:14:28.107Z",
+    "price": 22,
     "offerPct": 1
   }
 ]

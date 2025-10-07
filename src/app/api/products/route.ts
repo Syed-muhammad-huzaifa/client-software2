@@ -10,6 +10,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const companyName = String(body?.companyName || "").trim();
   const productName = String(body?.productName || "").trim();
+  const itemCode = String(body?.itemCode || "").trim();
   const price = Number(body?.price);
   const offerPct =
     body?.offerPct === undefined || body?.offerPct === null || body?.offerPct === ""
@@ -28,6 +29,12 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  if (!itemCode) {
+    return NextResponse.json(
+      { error: "itemCode is required" },
+      { status: 400 }
+    );
+  }
   if (
     offerPct !== undefined &&
     (!Number.isFinite(offerPct) || offerPct < 0 || offerPct > 100)
@@ -38,6 +45,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const created = addProduct({ companyName, productName, price, offerPct });
-  return NextResponse.json(created, { status: 201 });
+  try {
+    const created = addProduct({ companyName, productName, price, itemCode, offerPct });
+    return NextResponse.json(created, { status: 201 });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message ? error.message : "Unable to create product";
+    const status = message.toLowerCase().includes("itemcode") ? 409 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
 }

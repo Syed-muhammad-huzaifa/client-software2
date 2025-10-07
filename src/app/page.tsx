@@ -11,9 +11,17 @@ import {
   ShoppingCart,
   FileDown,
   Trash2,
+  Minus,
+  Plus,
 } from "lucide-react";
-  import jsPDF from "jspdf";
+import { Poppins } from "next/font/google";
+import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 /* ========= COMPANY CONFIG ========= */
 const COMPANY = {
@@ -35,6 +43,7 @@ const BISMILLAH =
 /* ========= TYPES ========= */
 type Product = {
   id: string;
+  itemCode: string;
   companyName: string;
   productName: string;
   available: boolean;
@@ -46,6 +55,7 @@ type Product = {
 type CartLine = {
   id: string;
   companyName: string; // kept for app state, but not shown in PDF table anymore
+  itemCode: string;
   productName: string;
   qty: number;
   price: number;
@@ -102,11 +112,11 @@ function buildWhatsAppMinimal(lines: CartLine[]) {
       const unit = net(l.price, l.offerPct);
       const sub = unit * l.qty;
       grand += sub;
-      return `${l.productName}\n  Qty: ${l.qty}  TP: ${pkr(unit)}  Sub: ${pkr(sub)}`;
+      return `${l.itemCode} - ${l.productName}\n  Qty: ${l.qty}  TP: ${pkr(unit)}  Sub: ${pkr(sub)}`;
     });
 
   const header = `${COMPANY.name}\nINVOICE: ${id}\nDATE: ${d.toLocaleDateString()}\n\n`;
-  const body = itemLines.length ? itemLines.join("\n\n") : "—";
+  const body = itemLines.length ? itemLines.join("\n\n") : "-";
   const footer = `\n\n--------------------------------\nGRAND TOTAL: ${pkr(grand)}\n${
     COMPANY.phone ? `Phone: ${COMPANY.phone}\n` : ""
   }`;
@@ -116,7 +126,7 @@ function buildWhatsAppMinimal(lines: CartLine[]) {
 
 /* ========= SMALL UI PARTS ========= */
 const Pill = ({ children }: { children: React.ReactNode }) => (
-  <span className="inline-flex items-center rounded-full bg-orange-50 px-2.5 py-0.5 text-[11px] font-semibold text-orange-700 ring-1 ring-inset ring-orange-200">
+  <span className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-sky-700 ring-1 ring-inset ring-sky-200">
     {children}
   </span>
 );
@@ -131,55 +141,31 @@ function QtyInput({
   label: string;
 }) {
   const clamp = (n: number) => Math.max(0, Math.min(9999, Math.floor(n || 0)));
-  const [delta, setDelta] = React.useState<number | null>(null);
-  const [animKey, setAnimKey] = React.useState(0);
-  const showDelta = (d: number) => {
-    if (!d) return;
-    setDelta(d);
-    setAnimKey((k) => k + 1);
-    window.setTimeout(() => setDelta(null), 650);
-  };
-
   const inc = () => {
     const next = clamp((value || 0) + 1);
-    showDelta(next - (value || 0));
     onChange(next);
   };
   const dec = () => {
     const next = clamp((value || 0) - 1);
-    showDelta(next - (value || 0));
     onChange(next);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.currentTarget.value);
     const next = clamp(v);
-    const d = next - (value || 0);
-    if (d) showDelta(d);
     onChange(next);
   };
 
   return (
-    <div className="relative w-20">
-      {/* Inline +/− bubble */}
-      <div
-        key={animKey}
-        className={`pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 text-[11px] font-extrabold ${
-          delta ? "opacity-100" : "opacity-0"
-        } transition-all duration-500`}
-        style={{ transform: `translate(-50%, ${delta ? "-8px" : "0px"})` }}
+    <div className="flex items-center justify-center gap-2">
+      <button
+        type="button"
+        onClick={dec}
+        aria-label={`Decrease ${label}`}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-indigo-400 to-sky-500 text-white shadow-sm transition hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
       >
-        {delta && (
-          <span
-            className={`rounded-full px-1.5 py-0.5 ring-1 ring-orange-300 ${
-              delta > 0 ? "bg-orange-600 text-white" : "bg-orange-50 text-orange-700"
-            }`}
-          >
-            {delta > 0 ? `+${delta}` : `${delta}`}
-          </span>
-        )}
-      </div>
-
+        <Minus className="h-4 w-4" />
+      </button>
       <input
         type="number"
         min={0}
@@ -188,36 +174,28 @@ function QtyInput({
         aria-label={label}
         value={Number.isFinite(value) ? value : 0}
         onChange={handleChange}
-        className="w-full rounded-md border border-orange-300 bg-white pr-7 pl-2 py-1 text-center text-[13px] font-semibold text-orange-900 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-        placeholder="Qty"
+        className="w-16 rounded-xl border border-sky-200 bg-white px-2 py-2 text-center text-sm font-semibold text-slate-700 shadow-inner outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
+        placeholder="0"
       />
-
-      {/* custom spinner */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-6 flex flex-col">
-        <button
-          type="button"
-          onClick={inc}
-          className="pointer-events-auto h-1/2 flex items-center justify-center rounded-tr-md border-l border-b border-orange-300 bg-orange-50 hover:bg-orange-100 active:bg-orange-200"
-          aria-label="Increase quantity"
-          tabIndex={-1}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" className="fill-orange-700"><path d="M7 14l5-5 5 5z"/></svg>
-        </button>
-        <button
-          type="button"
-          onClick={dec}
-          className="pointer-events-auto h-1/2 flex items-center justify-center rounded-br-md border-l border-orange-300 bg-orange-50 hover:bg-orange-100 active:bg-orange-200"
-          aria-label="Decrease quantity"
-          tabIndex={-1}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" className="fill-orange-700"><path d="M7 10l5 5 5-5z"/></svg>
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={inc}
+        aria-label={`Increase ${label}`}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 via-indigo-400 to-sky-500 text-white shadow-sm transition hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
 
       <style jsx global>{`
-        input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+        input[type="number"] {
+          appearance: textfield;
+          -moz-appearance: textfield;
+        }
         input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
       `}</style>
     </div>
   );
@@ -231,28 +209,70 @@ function CompanyHeader({
   query: string;
   setQuery: (v: string) => void;
 }) {
-  return (
-    <header className="sticky top-0 z-40 border-b border-orange-200 bg-white/90 backdrop-blur">
-      <div className="bg-orange-50 text-orange-900">
-        <div className="mx-auto max-w-7xl px-4 py-2 text-center text-base sm:text-lg font-extrabold tracking-wide">
-          <span>{BISMILLAH}</span>
-        </div>
-      </div>
+  const [typedName, setTypedName] = useState("");
+  const [cursorVisible, setCursorVisible] = useState(true);
+  const hasTyped = useRef(false);
 
-      <div className="mx-auto max-w-7xl px-4 py-2">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="text-lg sm:text-xl font-extrabold tracking-tight text-orange-900">
-            {COMPANY.name}
-          </div>
-          <div className="sm:ml-6 text-[12px] text-orange-700">{COMPANY.tagline}</div>
-          <div className="sm:ml-auto relative w-full sm:w-96">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-orange-600" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search company or item"
-              className="w-full rounded-lg bg-white border border-orange-300 pl-9 pr-3 py-2 text-sm text-orange-900 placeholder-orange-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-            />
+  useEffect(() => {
+    if (hasTyped.current) return;
+    hasTyped.current = true;
+    const full = COMPANY.name;
+    let index = 0;
+    setTypedName("");
+    const interval = window.setInterval(() => {
+      index += 1;
+      setTypedName(full.slice(0, index));
+      if (index >= full.length) {
+        window.clearInterval(interval);
+      }
+    }, 120);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setCursorVisible((prev) => !prev);
+    }, 500);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  return (
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur">
+      <div className="mx-auto max-w-7xl px-4 py-3 sm:py-4">
+        <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-sm shadow-sky-50">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.4em] text-slate-400">
+                {BISMILLAH}
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <h1 className="bg-gradient-to-r from-sky-500 via-indigo-500 to-cyan-500 bg-clip-text text-3xl font-black tracking-[0.2em] text-transparent drop-shadow-[0_0_20px_rgba(14,165,233,0.35)] sm:text-4xl">
+                  {typedName}
+                </h1>
+                {cursorVisible && (
+                  <span className="inline-block h-6 w-[3px] animate-pulse bg-sky-400" aria-hidden />
+                )}
+              </div>
+              <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-sky-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-sky-600">
+                <MapPin className="h-3.5 w-3.5 text-sky-500" />
+                {COMPANY.addressShort}
+              </div>
+            </div>
+            <div className="w-full max-w-sm sm:max-w-md">
+              <label className="sr-only" htmlFor="catalog-search">
+                Search catalogue
+              </label>
+              <div className="relative rounded-2xl border border-slate-200 bg-white px-4 py-2 transition focus-within:border-sky-400 focus-within:ring-2 focus-within:ring-sky-100">
+                <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-sky-500" />
+                <input
+                  id="catalog-search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search product, code or company"
+                  className="w-full rounded-lg bg-transparent pl-10 pr-3 text-sm font-semibold text-slate-700 placeholder:text-slate-400 outline-none"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -263,36 +283,40 @@ function CompanyHeader({
 /* ========= FOOTER ========= */
 function CompanyFooter() {
   return (
-    <footer className="mt-8 border-t border-orange-200 bg-orange-50/60">
-      <div className="mx-auto max-w-7xl px-4 py-5 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-orange-900">
+    <footer className="mt-16 border-t border-slate-200 bg-white">
+      <div className="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 gap-6 text-sm text-slate-600 md:grid-cols-3">
         <div className="space-y-1">
-          <div className="font-semibold break-words">{COMPANY.name}</div>
-          <div className="text-orange-700 break-words">{COMPANY.tagline}</div>
+          <div className="font-semibold tracking-wide text-slate-800">{COMPANY.name}</div>
+          <div className="text-slate-500">{COMPANY.tagline}</div>
         </div>
         <div className="space-y-2">
           <div className="flex items-start gap-2 break-words">
-            <MessageCircle className="h-4 w-4 mt-0.5 text-orange-700" />
+            <MessageCircle className="h-4 w-4 mt-0.5 text-slate-400" />
             <span>WhatsApp: {COMPANY.whatsappNumber}</span>
           </div>
           <div className="flex items-start gap-2 break-words">
-            <Phone className="h-4 w-4 mt-0.5 text-orange-700" />
+            <Phone className="h-4 w-4 mt-0.5 text-slate-400" />
             <span>{COMPANY.phone}</span>
           </div>
           <div className="flex items-start gap-2 break-words">
-            <Mail className="h-4 w-4 mt-0.5 text-orange-700" />
+            <Mail className="h-4 w-4 mt-0.5 text-slate-400" />
             <span className="break-words">{COMPANY.email}</span>
           </div>
         </div>
         <div className="space-y-2">
           <div className="flex items-start gap-2 break-words">
-            <MapPin className="h-4 w-4 mt-0.5 text-orange-700" />
-            <span className="break-words">{COMPANY.addressFull}</span>
+            <MapPin className="h-4 w-4 mt-0.5 text-slate-400" />
+            <span className="break-words text-slate-500">{COMPANY.addressFull}</span>
           </div>
+        </div>
+        <div className="md:col-span-3 text-center text-xs text-slate-400">
+          &copy; {new Date().getFullYear()} {COMPANY.name}. All rights reserved.
         </div>
       </div>
     </footer>
   );
 }
+
 
 /* ========= CART SUMMARY ========= */
 function CartSummary({
@@ -313,51 +337,55 @@ function CartSummary({
   delta: number;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-2 mt-5">
-      <div className="rounded-2xl border border-orange-200 bg-white shadow-sm px-3 py-3 flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <div className="shrink-0 grid place-items-center h-9 w-9 rounded-xl bg-orange-50 ring-1 ring-orange-200 relative">
-            <ShoppingCart className="h-4 w-4 text-orange-700" />
-            {delta !== 0 && (
-              <span className={`absolute -top-2 -right-2 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ring-1 ring-orange-300 ${delta > 0 ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-700'}`}>{delta > 0 ? `+${delta}` : delta}</span>
-            )}
-          </div>
-          <div className="text-sm">
-            <div className="font-bold leading-tight text-orange-900">
-              {count} item{count === 1 ? "" : "s"} in cart
+    <section className="mx-auto mt-12 max-w-7xl px-4 pb-2">
+      <div className="flex flex-col gap-5 rounded-3xl border border-slate-200 bg-white/90 px-5 py-6 shadow-lg shadow-sky-50">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className="relative grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-sky-100 via-indigo-100 to-cyan-100 shadow-inner">
+              <ShoppingCart className="h-5 w-5 text-sky-500" />
+              {delta !== 0 && (
+                <span className="absolute -top-2 -right-2 rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow">
+                  {delta > 0 ? `+${delta}` : delta}
+                </span>
+              )}
             </div>
-            <div className="text-[12px] text-orange-700">Customer name is required for the PDF.</div>
+            <div className="text-sm">
+              <div className="text-base font-semibold text-slate-800">
+                {count} item{count === 1 ? "" : "s"} in invoice
+              </div>
+              <div className="text-xs text-slate-500">Add a customer name to personalise the PDF.</div>
+            </div>
           </div>
-          <div className="ml-auto w-full sm:w-80 relative">
+          <div className="w-full sm:ml-auto sm:w-72">
             <input
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Customer Name"
-              className="w-full rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm text-orange-900 placeholder-orange-400 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
+              placeholder="Customer name"
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-inner outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100"
             />
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <button
-            onClick={onWhatsApp}
-            className="w-full rounded-lg bg-orange-600 hover:bg-orange-700 active:bg-orange-800 transition px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2 text-white"
-            title="Share invoice via WhatsApp (PDF when possible)"
-          >
-            <Share2 className="h-4 w-4" /> WhatsApp Invoice
-          </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             onClick={onDownloadPDF}
-            className="w-full rounded-lg bg-orange-600 hover:bg-orange-700 active:bg-orange-800 transition px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2 text-white"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-200"
             title="Download invoice PDF"
           >
             <FileDown className="h-4 w-4" /> Download PDF
           </button>
           <button
+            onClick={onWhatsApp}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-600 shadow-sm transition hover:border-sky-300 hover:bg-sky-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-200"
+            title="Share invoice"
+          >
+            <Share2 className="h-4 w-4" /> Share
+          </button>
+          <button
             onClick={onClearCart}
-            className="w-full rounded-lg border border-orange-300 bg-white px-3 py-2 text-sm font-semibold inline-flex items-center justify-center gap-2 text-orange-800 hover:bg-orange-50 active:bg-orange-100"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold text-slate-400 transition hover:text-slate-600"
             title="Clear all quantities"
           >
-            <Trash2 className="h-4 w-4" /> Clear Cart
+            <Trash2 className="h-4 w-4" /> Clear cart
           </button>
         </div>
       </div>
@@ -390,6 +418,7 @@ export default function OfferList() {
                 .sort(
                   (a, b) =>
                     a.companyName.localeCompare(b.companyName) ||
+                    a.itemCode.localeCompare(b.itemCode) ||
                     a.productName.localeCompare(b.productName)
                 )
             : []
@@ -420,10 +449,11 @@ export default function OfferList() {
     const list = !q
       ? products
       : products.filter(
-          (p) =>
-            p.productName.toLowerCase().includes(q) ||
-            p.companyName.toLowerCase().includes(q)
-        );
+        (p) =>
+          p.productName.toLowerCase().includes(q) ||
+          p.companyName.toLowerCase().includes(q) ||
+          p.itemCode.toLowerCase().includes(q)
+      );
     const g: Record<string, Product[]> = {};
     for (const p of list) (g[p.companyName] ||= []).push(p);
     return g;
@@ -438,6 +468,7 @@ export default function OfferList() {
         ls.push({
           id: p.id,
           companyName: p.companyName,
+          itemCode: p.itemCode,
           productName: p.productName,
           qty,
           price: p.price,
@@ -558,7 +589,7 @@ export default function OfferList() {
 
           const shareData: ShareData = {
             title: "Invoice",
-            text: `${COMPANY.name} — Order Invoice`,
+            text: `${COMPANY.name} - Order Invoice`,
             files: [file] as File[],
           };
 
@@ -588,8 +619,23 @@ export default function OfferList() {
   if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
     (function test_buildWhatsAppMinimal() {
       const lines: CartLine[] = [
-        { id: "1", companyName: "X", productName: "Item A", qty: 2, price: 100, offerPct: 10 },
-        { id: "2", companyName: "X", productName: "Item B", qty: 1, price: 50 },
+        {
+          id: "1",
+          companyName: "X",
+          itemCode: "X-A",
+          productName: "Item A",
+          qty: 2,
+          price: 100,
+          offerPct: 10,
+        },
+        {
+          id: "2",
+          companyName: "X",
+          itemCode: "X-B",
+          productName: "Item B",
+          qty: 1,
+          price: 50,
+        },
       ];
       const t = buildWhatsAppMinimal(lines);
       console.assert(t.includes("INVOICE:"), "Invoice header missing");
@@ -598,68 +644,97 @@ export default function OfferList() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-orange-900">
+    <div className={`${poppins.className} min-h-screen bg-slate-50 text-slate-700`}>
       <CompanyHeader query={query} setQuery={setQuery} />
 
-      <main className="mx-auto max-w-7xl px-4 py-4">
-        {/* GROUPED TABLE (compact rows) */}
+      <main id="catalog" className="mx-auto max-w-7xl px-4 pb-12 pt-6">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800 sm:text-2xl">Live Catalogue</h2>
+            <p className="text-sm text-slate-500">
+              Set precise quantities per SKU and generate instant invoices.
+            </p>
+          </div>
+          <Pill>REAL-TIME SYNCED</Pill>
+        </div>
         {loading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, gi) => (
-              <div key={gi} className="rounded-2xl border border-orange-200 bg-white shadow-sm">
-                <div className="px-3 py-2 font-semibold text-orange-900 border-b border-orange-200">Loading…</div>
-                <ul className="divide-y divide-orange-100">
-                  {[...Array(4)].map((_, i) => (
-                    <li key={i} className="h-10 px-3 animate-pulse" />
-                  ))}
-                </ul>
+          <div className="space-y-6">
+            {Array.from({ length: 2 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="animate-pulse rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+              >
+                <div className="h-5 w-40 rounded-full bg-slate-100" />
+                <div className="mt-4 h-40 rounded-2xl bg-slate-50" />
               </div>
             ))}
           </div>
         ) : Object.keys(groups).length === 0 ? (
-          <div className="rounded-2xl border border-orange-200 bg-white p-6 text-center text-orange-700">No products available.</div>
+          <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center text-slate-500 shadow-sm">
+            No products available right now.
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-10">
             {Object.entries(groups).map(([company, list]) => (
-              <section key={company} className="rounded-2xl border border-orange-200 bg-white shadow-sm">
-                {/* Company heading */}
-                <div className="px-3 py-2 flex items-center gap-2 border-b border-orange-200">
-                  <span className="font-bold text-orange-900">{company}</span>
-                  <Pill>Items: {list.length}</Pill>
+              <section key={company} className="space-y-4">
+                <div className="text-center text-xs font-semibold uppercase tracking-[0.4em] text-slate-500">
+                  {company}
                 </div>
-
-                {/* Column headings */}
-                <div className="px-3 py-1 text-[11px] font-bold text-orange-900 grid grid-cols-12">
-                  <div className="col-span-7">ITEM NAME</div>
-                  <div className="col-span-2 text-center">QTY</div>
-                  <div className="col-span-1 text-right">OFFER</div>
-                  <div className="col-span-2 text-right">T.P</div>
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-sky-50">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-[720px] w-full border-collapse text-left text-sm text-slate-600">
+                      <thead className="sticky top-0 bg-gradient-to-r from-sky-100 via-indigo-100 to-cyan-100 text-slate-600">
+                        <tr>
+                          {["Item Code", "Product Name", "Price", "Quantity", "Offer"].map((label) => (
+                            <th
+                              key={label}
+                              className="px-6 py-4 text-xs font-semibold uppercase tracking-[0.3em]"
+                            >
+                              {label}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {list.map((p, idx) => {
+                          const qty = quantities[p.id] || 0;
+                          const zebra = idx % 2 === 0 ? "bg-white" : "bg-slate-50/60";
+                          return (
+                            <tr
+                              key={p.id}
+                              className={`${zebra} transition hover:bg-sky-50`}
+                            >
+                              <td className="px-6 py-4 text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
+                                {p.itemCode}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                                {p.productName}
+                              </td>
+                              <td className="px-6 py-4 text-sm font-semibold text-slate-700">
+                                {pkr(p.price)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <QtyInput
+                                  value={qty}
+                                  onChange={(n) => setQty(p.id, n)}
+                                  label={`Quantity for ${p.productName}`}
+                                />
+                              </td>
+                              <td className="px-6 py-4 text-sm font-semibold text-slate-600">
+                                {p.offerPct ? `${p.offerPct}%` : "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-
-                {/* Rows */}
-                <ul className="divide-y divide-orange-100">
-                  {list.map((p) => {
-                    const qty = quantities[p.id] || 0;
-                    return (
-                      <li key={p.id} className="h-10 px-3">
-                        <div className="h-full grid grid-cols-12 items-center gap-2">
-                          <div className="col-span-7 min-w-0 truncate text-[13px]">{p.productName}</div>
-                          <div className="col-span-2 flex justify-center">
-                            <QtyInput value={qty} onChange={(n) => setQty(p.id, n)} label={`Qty for ${p.productName}`} />
-                          </div>
-                          <div className="col-span-1 text-right text-[12px] text-orange-700">{p.offerPct ? `${p.offerPct}%` : "—"}</div>
-                          <div className="col-span-2 text-right text-[12px]">{pkr(p.price)}</div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
               </section>
             ))}
           </div>
         )}
 
-        {/* ACTIONS: WhatsApp + Download + Clear */}
         <CartSummary
           count={totalQty}
           onWhatsApp={handleWhatsApp}
@@ -716,7 +791,7 @@ export default function OfferList() {
         >
           <div>INVOICE # {orderNo()}</div>
           <div>DATE {new Date().toLocaleDateString()}</div>
-          <div>CUSTOMER {customerName || "—"}</div>
+          <div>CUSTOMER {customerName || "-"}</div>
         </div>
 
         {/* Flat table: ITEM NAME | QTY | TOTAL PRICE */}
@@ -761,7 +836,7 @@ export default function OfferList() {
                       return (
                         <tr key={l.id}>
                           <td style={{ border: "1px solid #000000", padding: "8px 10px" }}>
-                            {l.productName}
+                            {l.itemCode} - {l.productName}
                           </td>
                           <td style={{ border: "1px solid #000000", textAlign: "center", padding: "8px 10px" }}>
                             {l.qty}
@@ -794,3 +869,4 @@ export default function OfferList() {
     </div>
   );
 }
+

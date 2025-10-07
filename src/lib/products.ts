@@ -4,6 +4,7 @@ import path from "path";
 
 export type Product = {
   id: string;
+  itemCode: string;
   companyName: string;
   productName: string;
   available: boolean;
@@ -24,10 +25,22 @@ function ensureFile() {
 
 // Use Record<string, unknown> for flexible unknown JSON
 function normalizeRow(p: Record<string, unknown>): Product {
+  const companyName =
+    typeof p.companyName === "string" ? p.companyName.trim() : "";
+  const productName =
+    typeof p.productName === "string" ? p.productName.trim() : "";
+  const fallbackCode = [companyName, productName].filter(Boolean).join("-") || "ITEM";
+  const itemCodeRaw =
+    typeof p.itemCode === "string" && p.itemCode.trim()
+      ? p.itemCode.trim()
+      : fallbackCode;
+  const itemCode = itemCodeRaw.replace(/\s+/g, "-");
+
   return {
     id: typeof p.id === "string" ? p.id : Math.random().toString(36).slice(2),
-    companyName: typeof p.companyName === "string" ? p.companyName : "",
-    productName: typeof p.productName === "string" ? p.productName : "",
+    itemCode,
+    companyName,
+    productName,
     available: typeof p.available === "boolean" ? p.available : true,
     createdAt:
       typeof p.createdAt === "string" ? p.createdAt : new Date().toISOString(),
@@ -67,46 +80,63 @@ export function saveProducts(items: Product[]) {
 }
 
 // Overloads
-export function addProduct(
-  companyName: string,
-  productName: string,
-  price: number,
-  offerPct?: number
-): Product;
 export function addProduct(input: {
   companyName: string;
   productName: string;
   price: number;
+  itemCode: string;
   offerPct?: number;
 }): Product;
+export function addProduct(
+  companyName: string,
+  productName: string,
+  price: number,
+  itemCode: string,
+  offerPct?: number
+): Product;
 
 export function addProduct(
-  a: string | { companyName: string; productName: string; price: number; offerPct?: number },
+  a:
+    | {
+        companyName: string;
+        productName: string;
+        price: number;
+        itemCode: string;
+        offerPct?: number;
+      }
+    | string,
   b?: string,
   c?: number,
-  d?: number
+  d?: string | number,
+  e?: number
 ): Product {
   const items = listProducts();
 
   let companyName: string;
   let productName: string;
   let price: number;
+  let itemCode: string;
   let offerPct: number | undefined;
 
   if (typeof a === "string") {
     companyName = a.trim();
     productName = String(b ?? "").trim();
     price = Number(c);
-    offerPct = d !== undefined ? Number(d) : undefined;
+    itemCode = String(d ?? "").trim();
+    offerPct = e !== undefined ? Number(e) : undefined;
   } else {
     companyName = String(a.companyName ?? "").trim();
     productName = String(a.productName ?? "").trim();
     price = Number(a.price);
+    itemCode = String(a.itemCode ?? "").trim();
     offerPct = a.offerPct !== undefined ? Number(a.offerPct) : undefined;
   }
 
   if (!companyName || !productName) {
     throw new Error("companyName and productName are required");
+  }
+  if (!itemCode) {
+    throw new Error("itemCode is required");
   }
   if (!Number.isFinite(price) || price < 0) {
     throw new Error("price is required and must be a non-negative number");
@@ -118,8 +148,18 @@ export function addProduct(
     throw new Error("offerPct must be a number between 0 and 100");
   }
 
+  const normalizedCode = itemCode.replace(/\s+/g, "-");
+  if (
+    items.some(
+      (x) => x.itemCode.toLowerCase() === normalizedCode.toLowerCase()
+    )
+  ) {
+    throw new Error(`itemCode "${normalizedCode}" already exists`);
+  }
+
   const p: Product = {
     id: Math.random().toString(36).slice(2),
+    itemCode: normalizedCode,
     companyName,
     productName,
     available: true,
