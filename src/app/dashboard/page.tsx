@@ -12,6 +12,7 @@ import {
   Search,
   Hash,
 } from "lucide-react";
+import { Poppins } from "next/font/google";
 
 type Product = {
   id: string;
@@ -35,6 +36,11 @@ function currency(n: number) {
     return `Rs ${Math.round(n).toLocaleString()}`;
   }
 }
+
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export default function DashboardPage() {
   const [companyName, setCompanyName] = useState("");
@@ -154,26 +160,26 @@ export default function DashboardPage() {
   }, [items, query]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 via-white to-orange-50 flex flex-col">
+    <div className={`${poppins.className} min-h-screen bg-slate-50 text-slate-700 flex flex-col`}>
       {/* top container (header + form) */}
-      <div className="w-full px-3 sm:px-6 py-3 sm:py-4 shrink-0">
+      <div className="w-full px-3 sm:px-6 py-4 shrink-0">
         {/* Header */}
-        <div className="mb-2 sm:mb-3 flex items-center gap-2 sm:gap-3">
-          <div className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-400 text-white shadow">
+        <div className="mb-3 flex items-center gap-2 sm:gap-3 rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-lg shadow-sky-50">
+          <div className="grid h-9 w-9 sm:h-10 sm:w-10 place-items-center rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-500 text-white shadow">
             <Building2 className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
-          <h1 className="text-base sm:text-xl font-extrabold tracking-tight text-slate-900">
+          <h1 className="text-base sm:text-xl font-extrabold tracking-[0.2em] text-slate-800 uppercase">
             Admin Dashboard
           </h1>
 
           {/* Search */}
-          <div className="ml-auto relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <div className="relative ml-auto w-full max-w-xs sm:max-w-none sm:w-auto">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-sky-500" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search"
-              className="w-40 sm:w-72 rounded-lg border border-orange-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-400/60 text-slate-900 placeholder:text-slate-500"
+              placeholder="Search products or companies"
+              className="w-full rounded-2xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 placeholder:text-slate-400 sm:w-72"
             />
           </div>
         </div>
@@ -181,7 +187,7 @@ export default function DashboardPage() {
         {/* Add Form (with Price + Offer %) */}
         <form
           onSubmit={add}
-          className="rounded-lg border border-orange-200 bg-white/90 p-2.5 sm:p-3 shadow backdrop-blur"
+          className="rounded-3xl border border-slate-200 bg-white px-3 py-3 shadow-lg shadow-sky-50 sm:px-4 sm:py-4"
         >
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-7">
             {/* company */}
@@ -190,7 +196,7 @@ export default function DashboardPage() {
                 <Building2 className="h-4 w-4" />
               </span>
               <input
-                className="w-full rounded-md border border-orange-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-400/60 text-slate-900 placeholder:text-slate-500"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 text-slate-700 placeholder:text-slate-400"
                 placeholder="Company name"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
@@ -204,7 +210,7 @@ export default function DashboardPage() {
                 <Tag className="h-4 w-4" />
               </span>
               <input
-                className="w-full rounded-md border border-orange-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-400/60 text-slate-900 placeholder:text-slate-500"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 text-slate-700 placeholder:text-slate-400"
                 placeholder="Product name"
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
@@ -218,7 +224,7 @@ export default function DashboardPage() {
                 <Hash className="h-4 w-4" />
               </span>
               <input
-                className="w-full rounded-md border border-orange-200 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-400/60 text-slate-900 placeholder:text-slate-500 uppercase"
+                className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm uppercase outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 text-slate-700 placeholder:text-slate-400"
                 placeholder="Item code"
                 value={itemCode}
                 onChange={(e) => setItemCode(e.target.value.toUpperCase())}
@@ -233,7 +239,7 @@ export default function DashboardPage() {
                 min={0}
                 step="1"
                 inputMode="numeric"
-                className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-400/60 text-slate-900 placeholder:text-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 text-slate-700 placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="Price (PKR)"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
@@ -249,7 +255,7 @@ export default function DashboardPage() {
                 max={100}
                 step="1"
                 inputMode="numeric"
-                className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-300 focus:ring-2 focus:ring-orange-400/60 text-slate-900 placeholder:text-slate-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-100 text-slate-700 placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 placeholder="Offer % (optional)"
                 value={offerPct}
                 onChange={(e) => setOfferPct(e.target.value)}
@@ -259,7 +265,7 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-gradient-to-r from-orange-500 to-orange-400 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-orange-500/90 hover:to-orange-400/90 active:scale-[0.99] disabled:opacity-70 sm:col-span-1"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-500 px-3 py-2 text-sm font-semibold text-white shadow-lg transition hover:brightness-105 active:scale-[0.99] disabled:opacity-70 sm:col-span-1"
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -274,19 +280,19 @@ export default function DashboardPage() {
 
       {/* list fills remaining height & scrolls itself */}
       <div className="w-full px-0 sm:px-2 pb-4 grow overflow-y-auto">
-        <div className="mx-3 sm:mx-6 rounded-lg border border-orange-200 bg-white">
+        <div className="mx-3 sm:mx-6 rounded-3xl border border-slate-200 bg-white shadow-lg shadow-sky-50">
           {loading ? (
-            <div className="divide-y divide-orange-100">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="h-12 animate-pulse px-3" />
+            <div className="space-y-2 px-4 py-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="h-12 rounded-2xl bg-slate-100/80 animate-pulse" />
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-4 text-center text-slate-500">
+            <div className="m-4 rounded-2xl border border-slate-200 bg-white/80 p-10 text-center text-slate-500">
               No products found.
             </div>
           ) : (
-            <ul className="divide-y divide-orange-100">
+            <ul className="divide-y divide-slate-100">
               {filtered.map((p) => {
                 const hasOffer =
                   typeof p.offerPct === "number" && p.offerPct > 0;
@@ -298,89 +304,47 @@ export default function DashboardPage() {
                   : p.price;
 
                 return (
-                  <li key={p.id} className="h-14 px-3">
-                    <div className="h-full flex items-center justify-between gap-3">
-                      {/* Title block */}
-                      <div className="min-w-0 flex-1">
-                        {/* mobile: company on top, product under it */}
-                        <div className="block sm:hidden leading-tight">
-                      <div className="truncate text-[13px] font-semibold text-slate-900">
-                        {p.companyName}
-                      </div>
-                      <div className="truncate text-[12px] text-slate-700">
-                        {p.productName}
-                      </div>
-                      <div className="truncate text-[11px] font-semibold uppercase tracking-[0.3em] text-orange-500">
-                        {p.itemCode}
-                      </div>
-
-                          {/* price/offer (mobile) */}
-                          <div className="mt-0.5 flex items-center gap-1">
-                            <span
-                              className={`rounded-full px-1.5 py-0.5 text-[11px] border ${
-                                hasOffer
-                                  ? "border-amber-300 bg-amber-50 text-amber-800"
-                                  : "border-orange-200 bg-orange-50 text-orange-700"
-                              }`}
-                            >
-                              {hasOffer
-                                ? `${currency(net)} (−${p.offerPct}%)`
-                                : `${currency(p.price)}`}
+                  <li key={p.id} className="px-3 py-3">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white/85 px-4 py-4 shadow-sm transition hover:border-sky-300 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.35em] text-sky-500">
+                          <span>{p.itemCode || "UNKNOWN"}</span>
+                          <span className="hidden rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] text-slate-400 sm:inline">
+                            {p.id.slice(0, 6)}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-sm sm:text-base">
+                          <span className="font-semibold text-slate-800">{p.productName}</span>
+                          <span className="text-slate-500">/ {p.companyName}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-600">
+                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-semibold text-slate-500">
+                            Price {currency(p.price)}
+                          </span>
+                          {hasOffer ? (
+                            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 font-semibold text-indigo-700">
+                              Offer {p.offerPct}% → {currency(net)}
                             </span>
-                          </div>
-                        </div>
-
-                        {/* desktop: single line "Product — Company" with chip */}
-                        <div className="hidden sm:flex items-center gap-2 truncate text-sm">
-                          <span className="font-semibold text-slate-900 truncate">
-                            {p.productName}
-                          </span>
-                          <span className="text-slate-600 truncate">
-                            — {p.companyName}
-                          </span>
-                          <span className="text-orange-500 truncate uppercase tracking-[0.3em]">
-                            {p.itemCode}
-                          </span>
-                          <span
-                            className={`ml-1 shrink-0 rounded-full px-2 py-0.5 text-[11px] border ${
-                              hasOffer
-                                ? "border-amber-300 bg-amber-50 text-amber-800"
-                                : "border-orange-200 bg-orange-50 text-orange-700"
-                            }`}
-                            title={
-                              hasOffer
-                                ? `Price: ${currency(
-                                    p.price
-                                  )} | Offer: ${p.offerPct}% | Net: ${currency(
-                                    net
-                                  )}`
-                                : `Price: ${currency(p.price)}`
-                            }
-                          >
-                            {hasOffer
-                              ? `${currency(net)} (−${p.offerPct}%)`
-                              : `${currency(p.price)}`}
-                          </span>
+                          ) : null}
                         </div>
                       </div>
 
-                      {/* Right actions */}
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex items-center gap-2 sm:gap-3">
                         <button
                           onClick={() => toggle(p.id, !p.available)}
-                          className={`rounded-md p-1.5 text-white ${
+                          className={`rounded-xl p-2 transition ${
                             p.available
-                              ? "bg-emerald-600 hover:bg-emerald-500"
-                              : "bg-neutral-300 text-slate-800 hover:bg-neutral-400"
+                              ? "bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-500 text-white shadow-sm hover:brightness-110"
+                              : "border border-slate-200 text-slate-500 hover:border-slate-300"
                           }`}
-                          title={p.available ? "Turn OFF" : "Turn ON"}
-                          aria-label="toggle"
+                          title={p.available ? "Set unavailable" : "Set available"}
+                          aria-label="toggle availability"
                         >
                           <Power className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => remove(p.id)}
-                          className="rounded-md p-1.5 bg-red-500 text-white hover:bg-red-600"
+                          className="rounded-xl border border-red-200 bg-red-50 p-2 text-red-500 transition hover:border-red-300 hover:bg-red-100"
                           title="Delete"
                           aria-label="delete"
                         >

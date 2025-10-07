@@ -82,6 +82,17 @@ function net(price: number, offer?: number) {
 function digitsOnly(s: string) {
   return Array.from(s).filter((c) => c >= "0" && c <= "9").join("");
 }
+function formatPhoneDisplay(num: string, countryCode?: string) {
+  const digits = digitsOnly(num);
+  if (!digits) return num;
+  const ccDigits = digitsOnly(countryCode ?? "");
+  const cc = ccDigits || "92";
+  const local = digits.replace(/^0+/, "");
+  const groups = local.length === 10
+    ? local.replace(/(\d{3})(\d{3})(\d{4})/, "$1 $2 $3")
+    : local.replace(/(\d{3})(\d{3})(\d+)/, "$1 $2 $3");
+  return `+${cc} ${groups}`;
+}
 function formatPhoneForWa(raw: string, cc: string) {
   const d = digitsOnly(raw);
   const dcc = digitsOnly(cc || "");
@@ -282,6 +293,18 @@ function CompanyHeader({
 
 /* ========= FOOTER ========= */
 function CompanyFooter() {
+  const waNumber = formatPhoneForWa(COMPANY.whatsappNumber, COMPANY.whatsappCountryCode);
+  const waDisplay = formatPhoneDisplay(COMPANY.whatsappNumber, COMPANY.whatsappCountryCode);
+  const telDigits = digitsOnly(COMPANY.phone);
+  const localDigits = telDigits.replace(/^0+/, "");
+  const telCountry = digitsOnly(COMPANY.whatsappCountryCode) || "92";
+  const telHref = localDigits ? `tel:+${telCountry}${localDigits}` : `tel:${COMPANY.phone}`;
+  const telDisplay = localDigits ? formatPhoneDisplay(COMPANY.phone, COMPANY.whatsappCountryCode) : COMPANY.phone;
+  const waHref = waNumber
+    ? `https://wa.me/${waNumber}?text=${encodeURIComponent(`Hello ${COMPANY.name}`)}`
+    : undefined;
+  const mailHref = `mailto:${COMPANY.email}`;
+
   return (
     <footer className="mt-16 border-t border-slate-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-6 grid grid-cols-1 gap-6 text-sm text-slate-600 md:grid-cols-3">
@@ -292,15 +315,30 @@ function CompanyFooter() {
         <div className="space-y-2">
           <div className="flex items-start gap-2 break-words">
             <MessageCircle className="h-4 w-4 mt-0.5 text-slate-400" />
-            <span>WhatsApp: {COMPANY.whatsappNumber}</span>
+            {waHref ? (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-sky-600 hover:text-sky-500 transition"
+              >
+                WhatsApp: {waDisplay}
+              </a>
+            ) : (
+              <span>WhatsApp: {COMPANY.whatsappNumber}</span>
+            )}
           </div>
           <div className="flex items-start gap-2 break-words">
             <Phone className="h-4 w-4 mt-0.5 text-slate-400" />
-            <span>{COMPANY.phone}</span>
+            <a href={telHref} className="font-semibold text-sky-600 hover:text-sky-500 transition">
+              {telDisplay}
+            </a>
           </div>
           <div className="flex items-start gap-2 break-words">
             <Mail className="h-4 w-4 mt-0.5 text-slate-400" />
-            <span className="break-words">{COMPANY.email}</span>
+            <a href={mailHref} className="break-words font-semibold text-sky-600 hover:text-sky-500 transition">
+              {COMPANY.email}
+            </a>
           </div>
         </div>
         <div className="space-y-2">

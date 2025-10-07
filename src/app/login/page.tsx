@@ -52,12 +52,12 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
+    <div className="min-h-screen bg-slate-50">
       {/* Center container */}
       <div className="mx-auto max-w-md px-4 py-10 md:py-16">
         {/* Brand */}
         <div className="mb-6 flex items-center justify-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-orange-500 to-orange-400 text-white shadow-lg">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-500 text-white shadow-lg">
             <Lock className="h-6 w-6" />
           </div>
           <div className="text-center md:text-left">
@@ -71,7 +71,7 @@ function LoginForm() {
         {/* Card */}
         <form
           onSubmit={onSubmit}
-          className="rounded-2xl border border-orange-200 bg-white/90 p-6 shadow-xl backdrop-blur"
+          className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xl backdrop-blur"
         >
           {/* Error */}
           {err ? (
@@ -89,7 +89,7 @@ function LoginForm() {
               <Mail className="h-4 w-4" />
             </span>
             <input
-              className="w-full rounded-xl border border-orange-200 bg-white px-9 py-2.5 text-slate-900 outline-none ring-orange-400/60 placeholder:text-slate-400 focus:border-orange-300 focus:ring-2"
+              className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 text-slate-900 outline-none ring-sky-300/60 placeholder:text-slate-400 focus:border-sky-400 focus:ring-2"
               placeholder="Enter your username"
               value={username}
               onChange={(e) => setU(e.target.value)}
@@ -111,7 +111,7 @@ function LoginForm() {
             </span>
             <input
               type={showPw ? "text" : "password"}
-              className="w-full rounded-xl border border-orange-200 bg-white px-9 py-2.5 pr-10 text-slate-900 outline-none ring-orange-400/60 placeholder:text-slate-400 focus:border-orange-300 focus:ring-2"
+              className="w-full rounded-xl border border-slate-200 bg-white px-9 py-2.5 pr-10 text-slate-900 outline-none ring-sky-300/60 placeholder:text-slate-400 focus:border-sky-400 focus:ring-2"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setP(e.target.value)}
@@ -122,7 +122,7 @@ function LoginForm() {
               type="button"
               aria-label={showPw ? "Hide password" : "Show password"}
               onClick={() => setShowPw((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-orange-100"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 hover:bg-sky-100"
             >
               {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -132,7 +132,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={busy}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-400 px-4 py-2.5 font-semibold text-white shadow-md transition hover:from-orange-500/90 hover:to-orange-400/90 active:scale-[0.99] disabled:opacity-70"
+            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-sky-500 via-indigo-500 to-cyan-500 px-4 py-2.5 font-semibold text-white shadow-md transition hover:from-orange-500/90 hover:to-orange-400/90 active:scale-[0.99] disabled:opacity-70"
           >
             {busy ? (
               <>
@@ -154,7 +154,7 @@ function LoginForm() {
         {/* Tiny help text */}
         <p className="mt-4 text-center text-xs text-slate-500">
           Trouble signing in? Check your{" "}
-          <code className="rounded bg-orange-100 px-1">.env.local</code> creds and restart dev server.
+          <code className="rounded bg-sky-100 px-1">.env.local</code> creds and restart dev server.
         </p>
       </div>
     </div>
